@@ -9,6 +9,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from maya_db.base import Base
+import maya_db  # registers all models on Base.metadata
 
 config = context.config
 

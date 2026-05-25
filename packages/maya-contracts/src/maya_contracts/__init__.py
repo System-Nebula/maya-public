@@ -24,6 +24,17 @@ from maya_contracts.arena import (
     StatsResponse,
     VoteRequest,
 )
+from maya_contracts.registry import (
+    Artifact,
+    CapabilityFamily,
+    EvalRun,
+    EvalStatus,
+    EvalType,
+    Modality,
+    ModelRelease,
+    ModelReleaseCreate,
+    ModelReleaseUpdate,
+)
 
 __all__ = [
     "ErrorResponse",
@@ -44,4 +55,13 @@ __all__ = [
     "LeaderboardResponse",
     "StatsResponse",
     "VoteRequest",
+    "Artifact",
+    "CapabilityFamily",
+    "EvalRun",
+    "EvalStatus",
+    "EvalType",
+    "Modality",
+    "ModelRelease",
+    "ModelReleaseCreate",
+    "ModelReleaseUpdate",
 ]

@@ -16,6 +16,9 @@ class Candidate(Base, UUIDPrimaryKey, TimestampMixin):
 
     __tablename__ = "arena_candidates"
 
+    model_release_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("model_releases.id"), nullable=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(64), nullable=False)
     voice_id: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -30,6 +33,9 @@ class Candidate(Base, UUIDPrimaryKey, TimestampMixin):
     win_rate: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
+    model_release: Mapped[Optional["ModelRelease"]] = relationship(
+        "ModelRelease", back_populates="candidates"
+    )
     battles_a: Mapped[list["Battle"]] = relationship(
         "Battle", foreign_keys="Battle.candidate_a_id", back_populates="candidate_a"
     )

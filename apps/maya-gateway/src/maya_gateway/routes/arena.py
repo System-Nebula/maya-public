@@ -27,6 +27,7 @@ router = APIRouter(prefix="/api/arena", tags=["arena"])
 def _candidate_to_response(c: Candidate) -> CandidateResponse:
     return CandidateResponse(
         id=str(c.id),
+        model_release_id=c.model_release_id,
         name=c.name,
         provider=c.provider,
         voice_id=c.voice_id,
@@ -69,6 +70,7 @@ async def add_candidate(
         voice_id=req.voice_id,
         description=req.description,
         settings=str(req.settings) if req.settings else None,
+        model_release_id=req.model_release_id,
     )
     session.add(candidate)
     await session.flush()

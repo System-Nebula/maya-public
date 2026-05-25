@@ -14,6 +14,7 @@ class AddCandidateRequest(StrictModel):
     voice_id: str
     description: Optional[str] = None
     settings: Optional[dict] = None
+    model_release_id: Optional[str] = None
 
 
 class CreateBattleRequest(StrictModel):
@@ -29,6 +30,7 @@ class VoteRequest(StrictModel):
 
 class CandidateResponse(StrictModel):
     id: str
+    model_release_id: Optional[str] = None
     name: str
     provider: str
     voice_id: str

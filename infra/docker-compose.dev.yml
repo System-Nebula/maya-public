@@ -1,32 +1,11 @@
+# Public-stack dev compose.
+# Postgres is provided by the shared dev.postgres container (started by
+# ~/Workspace/src/crawler/docker-compose.yml). Connect over the external `dev` network.
+# The local `migrate` step is removed — schema is owned by lib/db in ~/Workspace
+# after the topology reconciliation (W3, plan postgresql-infrastructure-audit-audit-abundant-breeze.md).
+# Arena schema migrated to the public-package design via lib/db migration 20260524_200000.
+
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: maya_public
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  migrate:
-    build:
-      context: ..
-      dockerfile: apps/maya-gateway/Dockerfile
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/maya_public
-    command: >
-      sh -c "cd /app/packages/maya-db && uv run alembic upgrade head"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   gateway:
     build:
       context: ..
@@ -34,12 +13,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/maya_public
+      DATABASE_URL: postgresql+asyncpg://maya:maya@dev.postgres:5432/maya
       ENV: development
       PORT: "8080"
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
+    networks: [dev]
 
-volumes:
-  postgres_data:
+networks:
+  dev:
+    external: true
+    name: dev
