@@ -1,6 +1,65 @@
 """Database models."""
 
 from maya_db.models.arena import Battle, Candidate
+from maya_db.models.feeds import (
+    Channel,
+    ChannelTag,
+    CollectionSummary,
+    Comment,
+    CommentSnapshot,
+    FeedAnalysis,
+    Follow,
+    IntelItem,
+    KnowledgeItem,
+    Notification,
+    OperatorPreferences,
+    OperatorSourceToken,
+    Person,
+    PersonChannel,
+    Subscription,
+    TagNode,
+    Video,
+    VideoIntelLink,
+    VideoSimilarity,
+    VideoTag,
+)
 from maya_db.models.registry import EvalRun, ModelRelease
+from maya_db.models.research import (
+    BrowserHistoryEmbedding,
+    ResearchRun,
+    ResearchSentiment,
+    ResearchSource,
+    ResearchTopicEmbedding,
+)
 
-__all__ = ["Battle", "Candidate", "EvalRun", "ModelRelease"]
+__all__ = [
+    "Battle",
+    "Candidate",
+    "Channel",
+    "ChannelTag",
+    "CollectionSummary",
+    "Comment",
+    "CommentSnapshot",
+    "EvalRun",
+    "FeedAnalysis",
+    "Follow",
+    "IntelItem",
+    "KnowledgeItem",
+    "ModelRelease",
+    "Notification",
+    "OperatorPreferences",
+    "OperatorSourceToken",
+    "Person",
+    "PersonChannel",
+    "Subscription",
+    "TagNode",
+    "Video",
+    "VideoIntelLink",
+    "VideoSimilarity",
+    "VideoTag",
+    "BrowserHistoryEmbedding",
+    "ResearchRun",
+    "ResearchSentiment",
+    "ResearchSource",
+    "ResearchTopicEmbedding",
+]

@@ -1,14 +1,34 @@
 """Maya Public Gateway — FastAPI entrypoint."""
 
+import logging
 import os
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from obs_client import configure_logging
 
-from maya_gateway.routes import arena, health, registry
+from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, health, intel, music, music_query, notifications, registry, research
+
+log = logging.getLogger("maya-gateway")
+
+
+def _include_workspace_imagine() -> None:
+    """Mount Imagine routes from canonical ~/Workspace when available."""
+    workspace = Path(os.environ.get("WORKSPACE_ROOT", Path.home() / "Workspace")).resolve()
+    for p in (str(workspace), str(workspace / "src")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    try:
+        from src.maya.api.imagine import router as imagine_router  # type: ignore[import-not-found]
+
+        app.include_router(imagine_router)
+        log.info("imagine_router mounted from workspace %s", workspace)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("imagine_router unavailable: %s", exc)
 
 
 @asynccontextmanager
@@ -29,10 +49,36 @@ app = FastAPI(
 # API routes (all prefixed /api/* except docs)
 app.include_router(health.router)
 app.include_router(arena.router)
+app.include_router(music.router)
+app.include_router(music_query.router)
 app.include_router(registry.router)
+app.include_router(feeds.router)
+app.include_router(intel.router)
+app.include_router(follow.router)
+app.include_router(notifications.router)
+app.include_router(discover.router)
+app.include_router(discover_inbox.router)
+app.include_router(research.router)
 
-# SPA fallback: serve the start-page for non-API paths
+# Imagine /gateway/imagine — canonical backend from ~/Workspace
+_include_workspace_imagine()
+
 static_dir = Path(__file__).with_name("static").resolve()
+
+# Generated image artifacts (ComfyUI outputs)
+_image_root = Path(
+    os.environ.get(
+        "MAYA_IMAGE_ROOT",
+        Path(os.environ.get("WORKSPACE_ROOT", Path.home() / "Workspace")) / "data/outputs/maya-image",
+    )
+).resolve()
+_image_root.mkdir(parents=True, exist_ok=True)
+app.mount("/imagine-outputs", StaticFiles(directory=str(_image_root)), name="imagine-outputs")
+
+# Gateway static assets (Alpine imagine UI)
+_gateway_static = static_dir / "gateway"
+if _gateway_static.is_dir():
+    app.mount("/static/gateway", StaticFiles(directory=str(_gateway_static)), name="gateway-static")
 
 
 @app.get("/")
@@ -42,10 +88,11 @@ async def root():
 
 @app.get("/{path:path}")
 async def spa_catchall(path: str):
-    # Never shadow API or docs routes
-    if path.startswith(("api/", "docs", "redoc", "openapi.json")):
+    # Never shadow API, docs, gateway, or image output routes
+    if path.startswith(
+        ("api/", "docs", "redoc", "openapi.json", "gateway/", "imagine-outputs/", "static/")
+    ):
         raise HTTPException(status_code=404, detail="Not found")
-    # Serve static file if it exists, otherwise fallback to index.html
     target = static_dir / path
     if target.exists() and target.is_file():
         return FileResponse(target)

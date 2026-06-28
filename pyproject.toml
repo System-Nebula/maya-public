@@ -7,6 +7,7 @@ dependencies = []
 
 [tool.uv.workspace]
 members = ["packages/*", "apps/*"]
+exclude = ["apps/homepage"]
 
 [tool.uv.sources]
 maya-contracts = { workspace = true }
@@ -14,3 +15,6 @@ arena-core = { workspace = true }
 fal-client = { workspace = true }
 obs-client = { workspace = true }
 maya-db = { workspace = true }
+maya-feeds = { workspace = true }
+maya-graph = { workspace = true }
+maya-research = { workspace = true }

@@ -11,54 +11,59 @@ packages/
   fal-client/       Normalized fal.ai async client
   obs-client/       Observability / structured logging
   maya-db/          Postgres connection, base models, migrations
+  maya-feeds/       Creator-intel feed pipeline
+  maya-graph/       Graph helpers (follow / discovery)
+  maya-research/    Release-diff + research helpers
 
 apps/
   maya-gateway/     FastAPI gateway (parse → validate → call service → return)
   discord-shim/     HTTP glue between Discord and Maya (zero decision-making)
 
 infra/
-  docker-compose.dev.yml   Postgres + gateway for local dev
+  docker-compose.dev.yml   Dev gateway over the shared `dev` Postgres network
 ```
 
 ## Quick Start
 
 ```bash
 cd ~/Workspace-public
-uv sync
+cp .env.example .env          # then edit; gateway listens on PORT (default 8090)
+uv sync --all-packages        # --all-packages installs the apps, not just the root
 uv run maya-gateway
 ```
 
-Or with Docker:
+The gateway boots without a database — `/`, `/docs`, and `/api/status/*` work
+immediately. Endpoints that read/write data (arena, feeds, follow, …) need
+Postgres; set `DATABASE_URL` in `.env` to point at one.
+
+`uv run maya-ingest` runs the feed/ingest worker (also reads `.env`).
+
+## Health & docs
 
 ```bash
-cd infra
-docker compose -f docker-compose.dev.yml up
-```
-
-## Health Endpoint
-
-```bash
-curl http://localhost:8080/api/status/health
+curl http://localhost:8090/api/status/health   # liveness
+curl http://localhost:8090/api/status/ready     # readiness (reports DB state)
+# Interactive API docs: http://localhost:8090/docs
 ```
 
 ## Arena Endpoints
 
 ```bash
 # Add a candidate
-curl -X POST http://localhost:8080/api/arena/candidates \
+curl -X POST http://localhost:8090/api/arena/candidates \
   -H "Content-Type: application/json" \
   -d '{"name": "Test", "provider": "fal", "voice_id": "test-1"}'
 
 # List candidates
-curl http://localhost:8080/api/arena/candidates
+curl http://localhost:8090/api/arena/candidates
 
 # Create a battle
-curl -X POST http://localhost:8080/api/arena/battles \
+curl -X POST http://localhost:8090/api/arena/battles \
   -H "Content-Type: application/json" \
   -d '{"candidate_a_id": "<id>", "candidate_b_id": "<id>", "prompt": "battle prompt"}'
 
 # Vote
-curl -X POST http://localhost:8080/api/arena/battles/<id>/vote \
+curl -X POST http://localhost:8090/api/arena/battles/<id>/vote \
   -H "Content-Type: application/json" \
   -d '{"choice": "a"}'
 ```
