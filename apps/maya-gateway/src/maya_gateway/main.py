@@ -17,7 +17,16 @@ log = logging.getLogger("maya-gateway")
 
 
 def _include_workspace_imagine() -> None:
-    """Mount Imagine routes from canonical ~/Workspace when available."""
+    """Mount Imagine routes from in-repo maya_image, falling back to ~/Workspace."""
+    try:
+        from maya_image.api import router as imagine_router
+
+        app.include_router(imagine_router)
+        log.info("imagine_router mounted from maya_image")
+        return
+    except Exception as exc:
+        log.debug("in-repo imagine_router unavailable: %s", exc)
+
     workspace = Path(os.environ.get("WORKSPACE_ROOT", Path.home() / "Workspace")).resolve()
     for p in (str(workspace), str(workspace / "src")):
         if p not in sys.path:

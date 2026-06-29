@@ -11,15 +11,18 @@ packages/
   fal-client/       Normalized fal.ai async client
   obs-client/       Observability / structured logging
   maya-db/          Postgres connection, base models, migrations
+  maya-image/       ComfyUI image service + arena orchestration
   maya-feeds/       Creator-intel feed pipeline
   maya-graph/       Graph helpers (follow / discovery)
   maya-research/    Release-diff + research helpers
 
 apps/
   maya-gateway/     FastAPI gateway (parse → validate → call service → return)
+  maya-bot/         Discord bot — `/imagine` ComfyUI arena (self-hostable)
   discord-shim/     HTTP glue between Discord and Maya (zero decision-making)
 
 infra/
+  comfyui/          ComfyUI workflow JSON, weight fetch scripts, compose template
   docker-compose.dev.yml   Dev gateway over the shared `dev` Postgres network
 ```
 
@@ -37,6 +40,11 @@ immediately. Endpoints that read/write data (arena, feeds, follow, …) need
 Postgres; set `DATABASE_URL` in `.env` to point at one.
 
 `uv run maya-ingest` runs the feed/ingest worker (also reads `.env`).
+
+### Discord bot + image arena
+
+See [`apps/maya-bot/README.md`](apps/maya-bot/README.md) for clone-and-run setup:
+Postgres migrations → ComfyUI on `:3000` → `uv run maya-bot` → `/imagine mode:Arena`.
 
 ## Health & docs
 

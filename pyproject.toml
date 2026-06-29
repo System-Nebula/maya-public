@@ -18,3 +18,4 @@ maya-db = { workspace = true }
 maya-feeds = { workspace = true }
 maya-graph = { workspace = true }
 maya-research = { workspace = true }
+maya-image = { workspace = true }

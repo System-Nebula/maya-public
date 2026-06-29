@@ -13,6 +13,7 @@ dependencies = [
     "maya-contracts",
     "arena-core",
     "maya-db",
+    "maya-image",
     "maya-feeds",
     "maya-graph",
     "maya-research",
@@ -25,6 +26,7 @@ dependencies = [
 maya-contracts = { workspace = true }
 arena-core = { workspace = true }
 maya-db = { workspace = true }
+maya-image = { workspace = true }
 maya-feeds = { workspace = true }
 maya-graph = { workspace = true }
 maya-research = { workspace = true }
