@@ -2,7 +2,6 @@
 
 import logging
 import os
-import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -16,26 +15,13 @@ from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, 
 log = logging.getLogger("maya-gateway")
 
 
-def _include_workspace_imagine() -> None:
-    """Mount Imagine routes from in-repo maya_image, falling back to ~/Workspace."""
+def _include_imagine_router() -> None:
+    """Mount Imagine routes from in-repo maya_image."""
     try:
         from maya_image.api import router as imagine_router
 
         app.include_router(imagine_router)
-        log.info("imagine_router mounted from maya_image")
-        return
-    except Exception as exc:
-        log.debug("in-repo imagine_router unavailable: %s", exc)
-
-    workspace = Path(os.environ.get("WORKSPACE_ROOT", Path.home() / "Workspace")).resolve()
-    for p in (str(workspace), str(workspace / "src")):
-        if p not in sys.path:
-            sys.path.insert(0, p)
-    try:
-        from src.maya.api.imagine import router as imagine_router  # type: ignore[import-not-found]
-
-        app.include_router(imagine_router)
-        log.info("imagine_router mounted from workspace %s", workspace)
+        log.info("imagine_router mounted from maya_image.api")
     except Exception as exc:  # noqa: BLE001
         log.warning("imagine_router unavailable: %s", exc)
 
@@ -69,8 +55,8 @@ app.include_router(discover.router)
 app.include_router(discover_inbox.router)
 app.include_router(research.router)
 
-# Imagine /gateway/imagine — canonical backend from ~/Workspace
-_include_workspace_imagine()
+# Imagine /gateway/imagine — in-repo maya_image.api
+_include_imagine_router()
 
 static_dir = Path(__file__).with_name("static").resolve()
 

@@ -19,8 +19,10 @@ members = [
     "maya-graph",
     "maya-image",
     "maya-ingest",
+    "maya-llm",
     "maya-public",
     "maya-research",
+    "maya-voice",
     "obs-client",
 ]
 
@@ -1784,8 +1786,17 @@ dependencies = [
     { name = "pydantic" },
 ]
 
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.0" }]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+]
+provides-extras = ["dev"]
 
 [[package]]
 name = "maya-db"
@@ -1892,7 +1903,9 @@ source = { editable = "packages/maya-image" }
 dependencies = [
     { name = "aiohttp" },
     { name = "arena-core" },
+    { name = "fastapi" },
     { name = "httpx" },
+    { name = "jinja2" },
     { name = "maya-db" },
     { name = "opentelemetry-api" },
     { name = "pillow" },
@@ -1914,7 +1927,9 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
     { name = "arena-core", editable = "packages/arena-core" },
     { name = "fal-client", marker = "extra == 'hosted'", editable = "packages/fal-client" },
+    { name = "fastapi", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.27" },
+    { name = "jinja2", specifier = ">=3.1" },
     { name = "maya-db", editable = "packages/maya-db" },
     { name = "opentelemetry-api", specifier = ">=1.20" },
     { name = "pillow", specifier = ">=10.0" },
@@ -1935,6 +1950,7 @@ dependencies = [
     { name = "maya-db" },
     { name = "maya-feeds" },
     { name = "maya-graph" },
+    { name = "maya-llm" },
     { name = "maya-research" },
     { name = "obs-client" },
     { name = "prefect" },
@@ -1948,6 +1964,7 @@ requires-dist = [
     { name = "maya-db", editable = "packages/maya-db" },
     { name = "maya-feeds", editable = "packages/maya-feeds" },
     { name = "maya-graph", editable = "packages/maya-graph" },
+    { name = "maya-llm", editable = "packages/maya-llm" },
     { name = "maya-research", editable = "packages/maya-research" },
     { name = "obs-client", editable = "packages/obs-client" },
     { name = "prefect", specifier = ">=2.18" },
@@ -1955,9 +1972,53 @@ requires-dist = [
 ]
 
 [[package]]
+name = "maya-llm"
+version = "0.1.0"
+source = { editable = "packages/maya-llm" }
+dependencies = [
+    { name = "httpx" },
+    { name = "maya-contracts" },
+    { name = "pydantic" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "maya-contracts", editable = "packages/maya-contracts" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "maya-public"
 version = "0.1.0"
 source = { virtual = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-anyio" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyright", specifier = ">=1.1" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-anyio", specifier = ">=0.0" },
+    { name = "pytest-asyncio", specifier = ">=0.23" },
+]
 
 [[package]]
 name = "maya-research"
@@ -1968,6 +2029,7 @@ dependencies = [
     { name = "langgraph" },
     { name = "maya-contracts" },
     { name = "maya-db" },
+    { name = "maya-llm" },
     { name = "pydantic" },
     { name = "sqlalchemy" },
 ]
@@ -1987,6 +2049,7 @@ requires-dist = [
     { name = "langgraph", specifier = ">=0.2" },
     { name = "maya-contracts", editable = "packages/maya-contracts" },
     { name = "maya-db", editable = "packages/maya-db" },
+    { name = "maya-llm", editable = "packages/maya-llm" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
@@ -1994,6 +2057,32 @@ requires-dist = [
     { name = "trafilatura", marker = "extra == 'extract'", specifier = ">=2.0" },
 ]
 provides-extras = ["extract", "dev"]
+
+[[package]]
+name = "maya-voice"
+version = "0.1.0"
+source = { editable = "packages/maya-voice" }
+dependencies = [
+    { name = "maya-contracts" },
+    { name = "maya-llm" },
+    { name = "pydantic" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "maya-contracts", editable = "packages/maya-contracts" },
+    { name = "maya-llm", editable = "packages/maya-llm" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
+]
+provides-extras = ["dev"]
 
 [[package]]
 name = "mdurl"
@@ -2119,6 +2208,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0c/f7/addf1087b860ac60e6f382240f64fb99f8bfb532bb06f7c542b83c29ca61/multidict-6.7.1-cp314-cp314t-win_amd64.whl", hash = "sha256:497bde6223c212ba11d462853cfa4f0ae6ef97465033e7dc9940cdb3ab5b48e5", size = 53542, upload-time = "2026-01-26T02:46:08.809Z" },
     { url = "https://files.pythonhosted.org/packages/4c/81/4629d0aa32302ef7b2ec65c75a728cc5ff4fa410c50096174c1632e70b3e/multidict-6.7.1-cp314-cp314t-win_arm64.whl", hash = "sha256:2bbd113e0d4af5db41d5ebfe9ccaff89de2120578164f86a5d17d5a576d1e5b2", size = 44719, upload-time = "2026-01-26T02:46:11.146Z" },
     { url = "https://files.pythonhosted.org/packages/81/08/7036c080d7117f28a4af526d794aab6a84463126db031b007717c1a6676e/multidict-6.7.1-py3-none-any.whl", hash = "sha256:55d97cc6dae627efa6a6e548885712d4864b81110ac76fa4e534c03819fa4a56", size = 12319, upload-time = "2026-01-26T02:46:44.004Z" },
+]
+
+[[package]]
+name = "nodeenv"
+version = "1.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/bf/d1bda4f6168e0b2e9e5958945e01910052158313224ada5ce1fb2e1113b8/nodeenv-1.10.0.tar.gz", hash = "sha256:996c191ad80897d076bdfba80a41994c2b47c68e224c542b48feba42ba00f8bb", size = 55611, upload-time = "2025-12-20T14:08:54.006Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/b2/d0896bdcdc8d28a7fc5717c305f1a861c26e18c05047949fb371034d98bd/nodeenv-1.10.0-py2.py3-none-any.whl", hash = "sha256:5bb13e3eed2923615535339b3c620e76779af4cb4c6a90deccc9e36b274d3827", size = 23438, upload-time = "2025-12-20T14:08:52.782Z" },
 ]
 
 [[package]]
@@ -3038,6 +3136,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pyright"
+version = "1.1.411"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nodeenv" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7e/ab/265f7dc69d28113ebba19092e57b075f41543b2ed048429c5f56e2b88eac/pyright-1.1.411.tar.gz", hash = "sha256:d885a0551f2e763b089a02702174e7f4ba77548cddabc972ab86d1f7f1b0f998", size = 4112861, upload-time = "2026-06-25T02:14:06.37Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/49/385be530a6a5b78d1cbcd5c2e38debc8959a2fc6bdb716f4e581002979fc/pyright-1.1.411-py3-none-any.whl", hash = "sha256:dc7c72a8e2700c55baa127554040e067041ea53ccfd50bf96308cc4291c7d5d9", size = 6181526, upload-time = "2026-06-25T02:14:04.691Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3051,6 +3162,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e4/47/b9efed96c114afcfa3c9d3fe98a76a1d14c74a9e266d397cf6eb64be5e01/pytest-9.1.1.tar.gz", hash = "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313", size = 1636369, upload-time = "2026-06-19T10:58:32.857Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl", hash = "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c", size = 386536, upload-time = "2026-06-19T10:58:31.347Z" },
+]
+
+[[package]]
+name = "pytest-anyio"
+version = "0.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/00/44/a02e5877a671b0940f21a7a0d9704c22097b123ed5cdbcca9cab39f17acc/pytest-anyio-0.0.0.tar.gz", hash = "sha256:b41234e9e9ad7ea1dbfefcc1d6891b23d5ef7c9f07ccf804c13a9cc338571fd3", size = 1560, upload-time = "2021-06-29T22:57:30.846Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c6/25/bd6493ae85d0a281b6a0f248d0fdb1d9aa2b31f18bcd4a8800cf397d8209/pytest_anyio-0.0.0-py2.py3-none-any.whl", hash = "sha256:dc8b5c4741cb16ff90be37fddd585ca943ed12bbeb563de7ace6cd94441d8746", size = 1999, upload-time = "2021-06-29T22:57:29.158Z" },
 ]
 
 [[package]]

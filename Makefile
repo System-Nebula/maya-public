@@ -20,16 +20,17 @@ PGDATABASE ?= maya_public
 # nixpkgs (playwright-driver.browsers) so we don't try to launch a generic
 # Linux binary. Override on other distros if needed.
 NIX_PLAYWRIGHT_PKGS ?= bun python313 uv playwright-driver.browsers
-PLAYWRIGHT_BROWSERS_PATH ?= $(shell nix-shell -p playwright-driver.browsers --run 'echo $$buildInputs' 2>/dev/null | awk '{print $$1}')
+PLAYWRIGHT_BROWSERS_PATH ?= $(shell nix-shell -p playwright-driver.browsers --run 'echo $$buildInputs' 2>/dev/null | tr ' ' '\n' | grep playwright-browsers | head -1)
 
 WORKSPACE_ROOT ?= $(HOME)/Workspace
 
 .PHONY: help homepage-deps homepage-dev homepage-build homepage-deploy \
-        gateway-dev gateway-test e2e-deps e2e-install e2e-test docker-build clean-homepage \
+        gateway-dev gateway-test test typecheck voice-eval e2e-deps e2e-install e2e-test docker-build clean-homepage \
         feeds-migrate ingest-dev ingest-poll ingest-embed ingest-backfill ingest-analyze ingest-parse-intel \
         research-test research-flow \
         db-create db-shell slskd-ingest-fixtures slskd-worker slskd-status slskd-probe \
-        slskd-export-queue slskd-batch slskd-history-ingest slskd-worker-once slskd-album-grab
+        slskd-export-queue slskd-batch slskd-history-ingest slskd-worker-once slskd-album-grab \
+        forge-uat-smoke forge-uat-e2e forge-uat-integrated
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make <target>\n\nTargets:\n"} /^[a-zA-Z_-]+:.*##/ { printf "  %-20s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -52,7 +53,22 @@ gateway-dev: ## Run the FastAPI gateway in development mode (defaults to :$(GATE
 	WORKSPACE_ROOT=$(WORKSPACE_ROOT) PYTHONPATH=$(WORKSPACE_ROOT):$(WORKSPACE_ROOT)/src ENV=development PORT=$(GATEWAY_PORT) uv run maya-gateway
 
 gateway-test: ## Run the gateway pytest suite
-	uv run --project apps/maya-gateway --with pytest pytest apps/maya-gateway/tests/ -v
+	uv run --project apps/maya-gateway --with pytest --with pytest-anyio pytest apps/maya-gateway/tests/ -v
+
+test: ## Run all Python unit test suites
+	uv run --project apps/maya-gateway --with pytest --with pytest-anyio pytest apps/maya-gateway/tests/ -v
+	uv run --project packages/maya-research --with pytest --with pytest-asyncio pytest packages/maya-research/tests/ -v
+	uv run --project packages/maya-image --with pytest pytest packages/maya-image/tests/ -v
+	uv run --project packages/maya-llm --extra dev --with pytest --with pytest-asyncio pytest packages/maya-llm/tests/ -v
+	uv run --project packages/maya-voice --extra dev --with pytest --with pytest-asyncio pytest packages/maya-voice/tests/ -v
+	uv run --project packages/maya-contracts --with pytest pytest packages/maya-contracts/tests/ -v
+	uv run --project apps/maya-ingest --with pytest pytest apps/maya-ingest/tests/ -v
+
+typecheck: ## Run pyright on core packages (ratchet up over time)
+	uv run --with pyright pyright packages/maya-contracts/src packages/maya-llm/src packages/maya-voice/src
+
+voice-eval: ## Run fake-provider voice latency benchmarks
+	uv run --project packages/maya-voice maya-voice-eval
 
 e2e-deps: ## Install bun deps in tests/e2e
 	cd $(E2E_DIR) && bun install
@@ -64,7 +80,21 @@ e2e-install: e2e-deps ## Install bun deps; chromium comes from nixpkgs at runtim
 e2e-test: ## Run the Playwright e2e suite (uses nixpkgs chromium on NixOS)
 	@BROWSERS=$$(nix-shell -p playwright-driver.browsers --run 'echo $$buildInputs' | awk '{print $$1}'); \
 	cd $(E2E_DIR) && nix-shell -p $(NIX_PLAYWRIGHT_PKGS) --run \
-	  "PLAYWRIGHT_BROWSERS_PATH=$$BROWSERS PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 bun x playwright test"
+	  "PLAYWRIGHT_BROWSERS_PATH=$$BROWSERS PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 MAYA_FAKE_COMFY=1 bun x playwright test"
+
+forge-uat-smoke: ## DB-free Forge UAT — gateway imagine unit tests (fake Comfy)
+	MAYA_FAKE_COMFY=1 uv run --project apps/maya-gateway --with pytest --with pytest-anyio \
+	  pytest apps/maya-gateway/tests/test_imagine_routes.py -v
+
+forge-uat-e2e: ## Browser-level Forge UAT (fake Comfy, Playwright)
+	@BROWSERS=$$(nix-shell -p playwright-driver.browsers --run 'echo $$buildInputs' | awk '{print $$1}'); \
+	cd $(E2E_DIR) && nix-shell -p $(NIX_PLAYWRIGHT_PKGS) --run \
+	  "PLAYWRIGHT_BROWSERS_PATH=$$BROWSERS PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 MAYA_FAKE_COMFY=1 bun x playwright test tests/gateway-imagine.spec.ts tests/forge-imagine-uat.spec.ts"
+
+forge-uat-integrated: ## Integrated arena UAT — Postgres migrations + fake Comfy smoke
+	$(MAKE) db-create feeds-migrate
+	MAYA_FAKE_COMFY=1 DATABASE_URL=postgresql+asyncpg://$(PGUSER):$(PGUSER)@$(PGHOST):$(PGPORT)/$(PGDATABASE) \
+	  $(MAKE) forge-uat-smoke
 
 docker-build: ## Build the gateway image (multi-stage: bun homepage + uv Python)
 	docker build -t maya-gateway -f apps/maya-gateway/Dockerfile .

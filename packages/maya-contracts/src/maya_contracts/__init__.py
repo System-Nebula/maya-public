@@ -30,14 +30,43 @@ from maya_contracts.discover import (
     OperatorPreferencesPatch,
     WantlistMatch,
 )
+from maya_contracts.assistant import (
+    AssistantTurn,
+    CancelReason,
+    LlmProviderProfile,
+    SkillKind,
+    SkillResult,
+)
 from maya_contracts.feed import (
     CommentResponse,
+    FeedSearchResult,
     MediaResponse,
     PostResponse,
     PresignedUrlResponse,
-    SearchResult,
     SourceResponse,
     SubjectResponse,
+)
+from maya_contracts.image import (
+    AspectRatio,
+    BattleState,
+    ImagineArenaMode,
+    ImagineBattleView,
+    ImagineGenerateRequest,
+    ImagineVoteRequest,
+)
+from maya_contracts.voice import (
+    BargeInMode,
+    CloneMode,
+    DeliveryMode,
+    EmotionActionMap,
+    EQBandSpec,
+    EQBandType,
+    VoiceEvent,
+    VoiceEventType,
+    VoiceSession,
+    VoiceSettings,
+    VoiceStyleCue,
+    VoiceTurnState,
 )
 from maya_contracts.arena import (
     AddCandidateRequest,
@@ -166,6 +195,30 @@ from maya_contracts.registry import (
 )
 
 __all__ = [
+    "AssistantTurn",
+    "BargeInMode",
+    "CancelReason",
+    "CloneMode",
+    "DeliveryMode",
+    "EmotionActionMap",
+    "AspectRatio",
+    "BattleState",
+    "EQBandSpec",
+    "EQBandType",
+    "FeedSearchResult",
+    "ImagineArenaMode",
+    "ImagineBattleView",
+    "ImagineGenerateRequest",
+    "ImagineVoteRequest",
+    "LlmProviderProfile",
+    "SkillKind",
+    "SkillResult",
+    "VoiceEvent",
+    "VoiceEventType",
+    "VoiceSession",
+    "VoiceSettings",
+    "VoiceStyleCue",
+    "VoiceTurnState",
     "AcquisitionRequest",
     "AcquisitionResult",
     "AcquisitionStatus",
@@ -205,7 +258,6 @@ __all__ = [
     "MediaResponse",
     "PostResponse",
     "PresignedUrlResponse",
-    "SearchResult",
     "SourceResponse",
     "SubjectResponse",
     "AddCandidateRequest",

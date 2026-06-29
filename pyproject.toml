@@ -5,6 +5,9 @@ description = "Public-facing Maya services — arena, feed, image generation con
 requires-python = ">=3.11"
 dependencies = []
 
+[dependency-groups]
+dev = ["pyright>=1.1", "pytest>=8.0", "pytest-asyncio>=0.23", "pytest-anyio>=0.0"]
+
 [tool.uv.workspace]
 members = ["packages/*", "apps/*"]
 exclude = ["apps/homepage"]
@@ -19,3 +22,5 @@ maya-feeds = { workspace = true }
 maya-graph = { workspace = true }
 maya-research = { workspace = true }
 maya-image = { workspace = true }
+maya-llm = { workspace = true }
+maya-voice = { workspace = true }

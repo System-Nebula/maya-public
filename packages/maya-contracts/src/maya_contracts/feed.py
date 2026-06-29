@@ -64,9 +64,13 @@ class SourceResponse(StrictModel):
     created_at: datetime
 
 
-class SearchResult(StrictModel):
+class FeedSearchResult(StrictModel):
     post: PostResponse
     rank: float
+
+
+# Backward-compatible alias (prefer FeedSearchResult — music_query owns SearchResult).
+SearchResult = FeedSearchResult
 
 
 class PresignedUrlResponse(StrictModel):

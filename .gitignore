@@ -21,6 +21,9 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+tests/e2e/.artifacts/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
 
 # Build
 build/
@@ -42,3 +45,6 @@ local/
 
 # Standalone homepage app — its own repo (fork of jov4n/start-page); shared separately.
 apps/homepage/
+
+# Runtime-generated imagine artifacts (not source)
+apps/maya-gateway/src/maya_gateway/static/artifacts/
