@@ -26,10 +26,16 @@ htmlcov/
 build/
 dist/
 
-# Data
-data/
+# Data (repo root outputs only)
+/data/
 *.db
 *.sqlite3
+infra/comfyui/.env
+infra/comfyui/cache/
+
+# ComfyUI vendor clone (build locally)
+infra/comfyui/ComfyUI/Dockerfile*
+infra/comfyui/ComfyUI/.git/
 
 # Local overrides
 local/

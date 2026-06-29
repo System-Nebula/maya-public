@@ -1,6 +1,16 @@
 """Database models."""
 
-from maya_db.models.arena import Battle, Candidate
+from maya_db.models.arena import (
+    ArenaArtifact,
+    ArenaBattle,
+    ArenaCandidate,
+    ArenaSession,
+    ArenaVote,
+    Battle,
+    Candidate,
+)
+from maya_db.models.image_job import ImageJobTable
+from maya_db.models.image_workflow import ImageWorkflowRow
 from maya_db.models.feeds import (
     Channel,
     ChannelTag,
@@ -33,8 +43,15 @@ from maya_db.models.research import (
 )
 
 __all__ = [
+    "ArenaArtifact",
+    "ArenaBattle",
+    "ArenaCandidate",
+    "ArenaSession",
+    "ArenaVote",
     "Battle",
     "Candidate",
+    "ImageJobTable",
+    "ImageWorkflowRow",
     "Channel",
     "ChannelTag",
     "CollectionSummary",
