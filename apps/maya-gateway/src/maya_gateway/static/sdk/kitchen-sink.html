@@ -3,198 +3,205 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Maya Voice SDK — Kitchen Sink</title>
+    <title>Maya Voice SDK — Control Panel</title>
     <link rel="stylesheet" href="/sdk/maya-voice-sdk.css" />
     <style>
-      body { margin: 0; background: #16171a; color: #dbdee1; font-family: "Segoe UI", Inter, system-ui, sans-serif; }
-      .page { max-width: 1040px; margin: 0 auto; padding: 32px 20px 64px; }
-      .page > header h1 { font-size: 26px; margin: 0 0 4px; color: #fff; }
-      .page > header p { color: #949ba4; margin: 0 0 24px; max-width: 720px; line-height: 1.5; }
-      .pipe-strip { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #2b2d31; border: 1px solid #3f4147; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; font-size: 14px; }
-      .pipe-strip .arrow { color: #5865f2; font-weight: 700; }
-      .pipe-strip .stage { padding: 4px 10px; border-radius: 6px; background: #383a40; }
-      .pipe-strip .stage.on { background: rgba(88,101,242,.25); color: #c3c9ff; }
-      .docs { margin-top: 28px; background: #2b2d31; border: 1px solid #3f4147; border-radius: 8px; padding: 20px 24px; }
-      .docs h2 { font-size: 16px; color: #fff; margin-top: 0; }
-      .docs pre { background: #16171a; border: 1px solid #3f4147; border-radius: 6px; padding: 14px; overflow-x: auto; font-size: 13px; color: #b5bac1; }
-      code { font-family: ui-monospace, Menlo, monospace; }
+      body { margin: 0; background: #131315; }
+      .page { max-width: 1080px; margin: 0 auto; padding: 28px 20px 64px; }
+      .page-head { margin-bottom: 18px; }
+      .page-head h1 { font-size: 19px; font-weight: 600; color: var(--mv-text); margin: 0 0 2px; letter-spacing: -0.01em; }
+      .page-head p { font-size: 12px; color: var(--mv-muted); margin: 0; }
+      /* pipeline strip */
+      .pipe { display: flex; align-items: stretch; gap: 6px; margin-bottom: 18px; }
+      .pipe .stage { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 9px 12px; background: var(--mv-surface); border: 1px solid var(--mv-border); border-radius: 6px; }
+      .pipe .stage .k { font-family: var(--mv-mono); font-size: 10px; color: var(--mv-faint); letter-spacing: 0.05em; }
+      .pipe .stage .n { font-size: 12px; font-weight: 500; color: var(--mv-muted); }
+      .pipe .stage.on { border-color: var(--mv-accent); background: var(--mv-accent-tint); }
+      .pipe .stage.on .n { color: var(--mv-accent); }
+      .pipe .sep { align-self: center; color: var(--mv-faint); }
+      .docs { margin-top: 22px; }
+      .docs pre { background: var(--mv-sidebar); border: 1px solid var(--mv-border); border-radius: 6px; padding: 14px; overflow-x: auto; font-family: var(--mv-mono); font-size: 12px; color: var(--mv-muted); line-height: 1.6; }
+      .statusline { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
     </style>
   </head>
   <body>
-    <div class="page mv-root">
-      <header>
-        <h1>Maya Voice SDK — Kitchen Sink</h1>
-        <p>
-          Drop-in Alpine.js components for the operator voice control panel. The
-          full conversational pipeline is wired live:
-          <strong>listen (detection engine) → reasoning model → Maya's turn</strong>.
-          Settings persist to <code>localStorage</code> and all panels share one
-          <code>Alpine.store("mayaVoice")</code>.
-        </p>
-      </header>
+    <!-- Lucide icon sprite (outline, monoline). Referenced via <use>. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5a9 9 0 0 1 18 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></symbol>
+        <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+        <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 15h10"/></symbol>
+        <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M20 9h2M20 14h2M2 9h2M2 14h2"/></symbol>
+        <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+        <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></symbol>
+        <symbol id="i-square" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1"/></symbol>
+        <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
+        <symbol id="i-waveform" viewBox="0 0 24 24"><path d="M2 12h3l2-6 4 14 3-10 2 4h6"/></symbol>
+      </defs>
+    </svg>
 
-      <!-- Live pipeline status strip -->
-      <div class="pipe-strip" x-data>
-        <span class="stage" :class="{ on: $store.mayaVoice.audio.running }">🎙️ Listen</span>
-        <span class="arrow">→</span>
-        <span class="stage" :class="{ on: $store.mayaVoice.audio.speaking }">🗣️ Detect speech</span>
-        <span class="arrow">→</span>
-        <span class="stage" :class="{ on: $store.mayaVoice.status === 'thinking' }">🧠 Reason</span>
-        <span class="arrow">→</span>
-        <span class="stage" :class="{ on: $store.mayaVoice.turns.length }">💬 Maya turn</span>
-        <span style="flex:1"></span>
-        <span class="mv-pill" x-text="$store.mayaVoice.status"></span>
+    <div class="page mv-root" data-mv-theme="dark">
+      <div class="page-head">
+        <h1>Voice Control Panel</h1>
+        <p>Operator audio routing, detection engine, and the conversational pipeline — listen, reason, respond.</p>
       </div>
 
-      <!-- Settings shell (Slack/Discord two-pane) -->
+      <!-- Pipeline status strip -->
+      <div class="pipe" x-data>
+        <div class="stage" :class="{ on: $store.mayaVoice.audio.running }"><span class="k">01</span><span class="n">Listen</span></div>
+        <span class="sep">›</span>
+        <div class="stage" :class="{ on: $store.mayaVoice.audio.speaking }"><span class="k">02</span><span class="n">Detect speech</span></div>
+        <span class="sep">›</span>
+        <div class="stage" :class="{ on: $store.mayaVoice.status === 'thinking' }"><span class="k">03</span><span class="n">Reason</span></div>
+        <span class="sep">›</span>
+        <div class="stage" :class="{ on: $store.mayaVoice.turns.length }"><span class="k">04</span><span class="n">Maya turn</span></div>
+      </div>
+
+      <!-- Two-pane settings window -->
       <div class="mv-shell" x-data="{ tab: 'audio' }">
         <nav class="mv-sidebar">
-          <div class="mv-sidebar-title">Voice &amp; Audio</div>
-          <button class="mv-nav-item" :class="{ active: tab==='audio' }" @click="tab='audio'">🎧 Audio Interfaces</button>
-          <button class="mv-nav-item" :class="{ active: tab==='detection' }" @click="tab='detection'">📡 Detection Engine</button>
-          <button class="mv-nav-item" :class="{ active: tab==='wispr' }" @click="tab='wispr'">⌨️ Wispr Flow</button>
-          <button class="mv-nav-item" :class="{ active: tab==='reason' }" @click="tab='reason'">🧠 Reasoning</button>
-          <div class="mv-sidebar-title" style="margin-top:14px">Pipeline</div>
-          <button class="mv-nav-item" :class="{ active: tab==='pipeline' }" @click="tab='pipeline'">💬 Conversation</button>
+          <div class="mv-sidebar-title">Engine</div>
+          <button class="mv-nav-item" :class="{ active: tab==='audio' }" @click="tab='audio'"><svg class="mv-ico"><use href="#i-headphones"/></svg>Audio Interfaces</button>
+          <button class="mv-nav-item" :class="{ active: tab==='detection' }" @click="tab='detection'"><svg class="mv-ico"><use href="#i-activity"/></svg>Detection Engine</button>
+          <div class="mv-sidebar-title">Models</div>
+          <button class="mv-nav-item" :class="{ active: tab==='wispr' }" @click="tab='wispr'"><svg class="mv-ico"><use href="#i-keyboard"/></svg>Dictation (Wispr)</button>
+          <button class="mv-nav-item" :class="{ active: tab==='reason' }" @click="tab='reason'"><svg class="mv-ico"><use href="#i-cpu"/></svg>Reasoning</button>
+          <div class="mv-sidebar-title">Pipeline</div>
+          <button class="mv-nav-item" :class="{ active: tab==='pipeline' }" @click="tab='pipeline'"><svg class="mv-ico"><use href="#i-message"/></svg>Conversation</button>
         </nav>
 
         <div class="mv-content">
           <!-- ===== AUDIO INTERFACES ===== -->
           <div x-show="tab==='audio'" x-data="mayaDevicePanel()">
             <div class="mv-section">
-              <h2>Audio Interfaces</h2>
-              <h3>Input &amp; output devices</h3>
-              <p class="mv-desc">Pick the audio interface Maya listens on and speaks through. Grant mic permission to see device labels.</p>
-              <div class="mv-row">
-                <div class="mv-field">
-                  <label class="mv-label">Input device</label>
-                  <select class="mv-select" x-model="v.settings.input_device_id" @change="onChange()">
-                    <option :value="null">System default</option>
-                    <template x-for="d in v.devices.inputs" :key="d.id">
-                      <option :value="d.id" x-text="d.label"></option>
-                    </template>
-                  </select>
+              <p class="mv-eyebrow">Routing</p>
+              <h2 class="mv-title">Audio Interfaces</h2>
+              <p class="mv-desc">Select the hardware Maya listens on and speaks through. Grant microphone access to populate device labels.</p>
+              <div class="mv-card">
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Input device</div><div class="mv-row-sub">Capture source for the detection engine</div></div>
+                  <div class="rhs">
+                    <select class="mv-select" x-model="v.settings.input_device_id" @change="onChange()">
+                      <option :value="null">System default</option>
+                      <template x-for="d in v.devices.inputs" :key="d.id"><option :value="d.id" x-text="d.label"></option></template>
+                    </select>
+                  </div>
                 </div>
-                <div class="mv-field">
-                  <label class="mv-label">Output device</label>
-                  <select class="mv-select" x-model="v.settings.output_device_id" @change="onChange()">
-                    <option :value="null">System default</option>
-                    <template x-for="d in v.devices.outputs" :key="d.id">
-                      <option :value="d.id" x-text="d.label"></option>
-                    </template>
-                  </select>
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Output device</div><div class="mv-row-sub">Playback for Maya's synthesized voice</div></div>
+                  <div class="rhs">
+                    <select class="mv-select" x-model="v.settings.output_device_id" @change="onChange()">
+                      <option :value="null">System default</option>
+                      <template x-for="d in v.devices.outputs" :key="d.id"><option :value="d.id" x-text="d.label"></option></template>
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div class="mv-btn-row">
-                <button class="mv-btn mv-btn-ghost" @click="refresh()">Refresh devices</button>
-                <span class="mv-hint" x-text="v.devices.inputs.length + ' input(s), ' + v.devices.outputs.length + ' output(s) detected'"></span>
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Detected interfaces</div><div class="mv-row-sub mv-mono" x-text="v.devices.inputs.length + ' in · ' + v.devices.outputs.length + ' out'"></div></div>
+                  <div class="rhs"><button class="mv-btn" @click="refresh()"><svg class="mv-ico mv-ico-sm"><use href="#i-refresh"/></svg>Refresh</button></div>
+                </div>
               </div>
             </div>
 
-            <!-- Vocal input meter -->
+            <!-- Vocal input visualizer -->
             <div class="mv-section" x-data="mayaVocalInput()">
-              <h2>Vocal Input</h2>
-              <h3>Mic test &amp; live level</h3>
-              <p class="mv-desc">See your vocal input in real time. No mic? Use <strong>Simulate input</strong> to exercise the meter and detection engine.</p>
-              <div class="mv-meter" style="margin-bottom:10px">
-                <div class="mv-meter-fill" :style="`width:${levelPct}%`"></div>
-                <div class="mv-meter-threshold" :style="`left:${Math.round(v.settings.vad_threshold*100)}%`"></div>
-                <div class="mv-meter-peak" :style="`left:${peakPct}%`"></div>
+              <p class="mv-eyebrow">Monitor</p>
+              <h2 class="mv-title">Vocal Input</h2>
+              <p class="mv-desc">Real-time spectrum of the capture stream. Without a microphone, use a simulated source to exercise the meter and detection engine.</p>
+              <div class="mv-viz" aria-label="Input spectrum">
+                <template x-for="(b, i) in v.audio.bars" :key="i">
+                  <div class="bar" :class="{ idle: !v.audio.running }" :style="`height:${Math.max(2, Math.round(b*44))}px`"></div>
+                </template>
               </div>
-              <div class="mv-btn-row">
-                <button class="mv-btn mv-btn-primary" @click="startMic()" x-show="!v.audio.running">Start mic test</button>
-                <button class="mv-btn mv-btn-ghost" @click="simulate()" x-show="!v.audio.running">Simulate input</button>
-                <button class="mv-btn mv-btn-danger" @click="stop()" x-show="v.audio.running">Stop</button>
-                <span class="mv-badge" :class="{ speaking: v.audio.speaking }">
-                  <span class="dot"></span>
-                  <span x-text="v.audio.speaking ? 'Speaking' : 'Silent'"></span>
-                </span>
-                <span class="mv-pill" x-show="v.audio.source" x-text="v.audio.source"></span>
+              <div class="statusline">
+                <template x-if="!v.audio.running">
+                  <span style="display:flex;gap:8px">
+                    <button class="mv-btn mv-btn-primary" @click="startMic()"><svg class="mv-ico mv-ico-sm"><use href="#i-mic"/></svg>Start mic test</button>
+                    <button class="mv-btn" @click="simulate()"><svg class="mv-ico mv-ico-sm"><use href="#i-waveform"/></svg>Simulate input</button>
+                  </span>
+                </template>
+                <template x-if="v.audio.running">
+                  <button class="mv-btn mv-btn-danger" @click="stop()"><svg class="mv-ico mv-ico-sm"><use href="#i-square"/></svg>Stop</button>
+                </template>
+                <span class="mv-chip" :class="{ live: v.audio.speaking }"><span class="ind"></span><span x-text="v.audio.speaking ? 'SPEAKING' : 'SILENT'"></span></span>
+                <span class="mv-chip" x-show="v.audio.source" x-text="v.audio.source === 'mic' ? 'MIC' : 'SIM'"></span>
+                <span class="mv-mono" style="color:var(--mv-muted);font-size:12px" x-text="'lvl ' + (v.audio.level).toFixed(2)"></span>
               </div>
-              <p class="mv-hint" x-show="error" x-text="error" style="color:#f0b232"></p>
+              <p class="mv-desc" x-show="error" x-text="error" style="color:var(--mv-danger);margin-top:8px"></p>
             </div>
           </div>
 
           <!-- ===== DETECTION ENGINE ===== -->
           <div x-show="tab==='detection'" x-data="mayaDetectionEngine()">
             <div class="mv-section">
-              <h2>Pipeline · Step 1</h2>
-              <h3>Detection engine</h3>
-              <p class="mv-desc">Decides <em>when the operator is speaking</em> before audio is sent downstream to transcription + reasoning.</p>
-
-              <div class="mv-field">
-                <label class="mv-label">Detection mode</label>
-                <select class="mv-select" x-model="s.detection_mode" @change="save()">
-                  <template x-for="m in v.catalog.detection_modes" :key="m">
-                    <option :value="m" x-text="m"></option>
-                  </template>
-                </select>
-                <p class="mv-hint">vad = energy gate · push_to_talk = key held · continuous = always on</p>
-              </div>
-
-              <div class="mv-field" x-show="s.detection_mode==='vad'">
-                <label class="mv-label">Voice-activity threshold (<span x-text="thresholdPct"></span>%)</label>
-                <input type="range" class="mv-range" min="0" max="0.3" step="0.005" x-model.number="s.vad_threshold" @change="save()" />
-                <div class="mv-meter" style="margin-top:8px">
-                  <div class="mv-meter-fill" :style="`width:${Math.round(v.audio.level*100)}%`"></div>
-                  <div class="mv-meter-threshold" :style="`left:${Math.round(s.vad_threshold*100)}%`"></div>
+              <p class="mv-eyebrow">Pipeline · Step 01</p>
+              <h2 class="mv-title">Detection Engine</h2>
+              <p class="mv-desc">Gates when the operator is speaking before audio is forwarded to transcription and reasoning.</p>
+              <div class="mv-card">
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Mode</div><div class="mv-row-sub">vad · push_to_talk · continuous</div></div>
+                  <div class="rhs">
+                    <select class="mv-select" x-model="s.detection_mode" @change="save()">
+                      <template x-for="m in v.catalog.detection_modes" :key="m"><option :value="m" x-text="m"></option></template>
+                    </select>
+                  </div>
                 </div>
-                <p class="mv-hint">White marker = threshold. Speech is detected when the level crosses it.</p>
+                <div class="mv-list-row" x-show="s.detection_mode==='vad'">
+                  <div class="lhs"><div class="mv-row-label">Activity threshold</div><div class="mv-row-sub">RMS gate for speech onset</div></div>
+                  <div class="rhs"><input type="range" class="mv-range" min="0" max="0.3" step="0.005" x-model.number="s.vad_threshold" @change="save()" /><span class="mv-num" style="width:46px;text-align:right" x-text="(s.vad_threshold).toFixed(3)"></span></div>
+                </div>
+                <div class="mv-list-row" x-show="s.detection_mode==='vad'">
+                  <div class="lhs"><div class="mv-row-label">Hangover</div><div class="mv-row-sub">Silence before a turn ends</div></div>
+                  <div class="rhs"><input type="range" class="mv-range" min="100" max="1500" step="50" x-model.number="s.vad_hangover_ms" @change="save()" /><span class="mv-num" style="width:46px;text-align:right" x-text="s.vad_hangover_ms + 'ms'"></span></div>
+                </div>
+                <div class="mv-list-row" x-show="s.detection_mode==='push_to_talk'">
+                  <div class="lhs"><div class="mv-row-label">Push-to-talk key</div></div>
+                  <div class="rhs"><input class="mv-input" style="width:120px" x-model="s.push_to_talk_key" @change="save()" /></div>
+                </div>
               </div>
 
-              <div class="mv-field" x-show="s.detection_mode==='vad'">
-                <label class="mv-label">Hangover (<span x-text="s.vad_hangover_ms"></span> ms)</label>
-                <input type="range" class="mv-range" min="100" max="1500" step="50" x-model.number="s.vad_hangover_ms" @change="save()" />
-                <p class="mv-hint">Silence to wait before ending a turn (avoids clipping pauses).</p>
-              </div>
-
-              <div class="mv-field" x-show="s.detection_mode==='push_to_talk'">
-                <label class="mv-label">Push-to-talk key</label>
-                <input class="mv-input" x-model="s.push_to_talk_key" @change="save()" />
-              </div>
-
-              <div class="mv-btn-row">
-                <span class="mv-badge" :class="{ speaking: v.audio.speaking }">
-                  <span class="dot"></span>
-                  <span x-text="v.audio.speaking ? 'Speech detected' : 'No speech'"></span>
-                </span>
-                <span class="mv-hint">Live state — start input on the Audio tab to watch it react.</span>
+              <div style="margin-top:16px">
+                <p class="mv-eyebrow">Live</p>
+                <div class="mv-track">
+                  <div class="fill" :style="`width:${Math.round(v.audio.level*100)}%`"></div>
+                  <div class="tick" :style="`left:${Math.round(s.vad_threshold*100)}%`"></div>
+                </div>
+                <div class="statusline">
+                  <span class="mv-chip" :class="{ live: v.audio.speaking }"><span class="ind"></span><span x-text="v.audio.speaking ? 'SPEECH' : 'IDLE'"></span></span>
+                  <span class="mv-mono" style="color:var(--mv-muted);font-size:12px" x-text="'level ' + (v.audio.level*100).toFixed(0).padStart(3) + '% · thr ' + (s.vad_threshold*100).toFixed(1) + '%'"></span>
+                </div>
+                <p class="mv-desc" style="margin-top:8px">Start input on the Audio Interfaces tab to watch the gate react.</p>
               </div>
             </div>
           </div>
 
-          <!-- ===== WISPR FLOW ===== -->
+          <!-- ===== DICTATION (WISPR) ===== -->
           <div x-show="tab==='wispr'" x-data="mayaSettingsPanel()">
             <div class="mv-section">
-              <h2>Pipeline · Transcription</h2>
-              <h3>Wispr Flow defaults</h3>
-              <p class="mv-desc">Operator's default dictation settings (Wispr-Flow-style): which model transcribes speech and how the text is cleaned up.</p>
-              <div class="mv-row">
-                <div class="mv-field">
-                  <label class="mv-label">Dictation model</label>
-                  <select class="mv-select" x-model="s.wispr_model" @change="save()">
-                    <template x-for="m in cat.wispr_models" :key="m"><option :value="m" x-text="m"></option></template>
-                  </select>
+              <p class="mv-eyebrow">Pipeline · Transcription</p>
+              <h2 class="mv-title">Dictation Defaults</h2>
+              <p class="mv-desc">Wispr-Flow-style transcription model and text-cleanup defaults applied to detected speech.</p>
+              <div class="mv-card">
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Dictation model</div></div>
+                  <div class="rhs"><select class="mv-select" x-model="s.wispr_model" @change="save()"><template x-for="m in cat.wispr_models" :key="m"><option :value="m" x-text="m"></option></template></select></div>
                 </div>
-                <div class="mv-field">
-                  <label class="mv-label">Language</label>
-                  <select class="mv-select" x-model="s.language" @change="save()">
-                    <template x-for="l in cat.languages" :key="l"><option :value="l" x-text="l"></option></template>
-                  </select>
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Language</div></div>
+                  <div class="rhs"><select class="mv-select" style="min-width:120px" x-model="s.language" @change="save()"><template x-for="l in cat.languages" :key="l"><option :value="l" x-text="l"></option></template></select></div>
                 </div>
-              </div>
-              <div class="mv-field">
-                <div class="mv-toggle">
-                  <div><div class="t-label">Auto-punctuation</div><div class="t-sub">Capitalize and add end punctuation.</div></div>
-                  <label class="mv-switch"><input type="checkbox" x-model="s.auto_punctuation" @change="save()" /><span class="slider"></span></label>
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Auto-punctuation</div><div class="mv-row-sub">Capitalize and terminate sentences</div></div>
+                  <div class="rhs"><label class="mv-switch"><input type="checkbox" x-model="s.auto_punctuation" @change="save()" /><span class="slider"></span></label></div>
                 </div>
-                <div class="mv-toggle">
-                  <div><div class="t-label">Filler removal</div><div class="t-sub">Strip "um", "uh", "like", …</div></div>
-                  <label class="mv-switch"><input type="checkbox" x-model="s.filler_removal" @change="save()" /><span class="slider"></span></label>
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Filler removal</div><div class="mv-row-sub">Strip "um", "uh", "like"</div></div>
+                  <div class="rhs"><label class="mv-switch"><input type="checkbox" x-model="s.filler_removal" @change="save()" /><span class="slider"></span></label></div>
                 </div>
-                <div class="mv-toggle">
-                  <div><div class="t-label">Noise suppression</div><div class="t-sub">Applied to the mic capture stream.</div></div>
-                  <label class="mv-switch"><input type="checkbox" x-model="s.noise_suppression" @change="save()" /><span class="slider"></span></label>
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Noise suppression</div><div class="mv-row-sub">Applied to capture stream</div></div>
+                  <div class="rhs"><label class="mv-switch"><input type="checkbox" x-model="s.noise_suppression" @change="save()" /><span class="slider"></span></label></div>
                 </div>
               </div>
             </div>
@@ -203,55 +210,51 @@
           <!-- ===== REASONING ===== -->
           <div x-show="tab==='reason'" x-data="mayaSettingsPanel()">
             <div class="mv-section">
-              <h2>Pipeline · Step 2</h2>
-              <h3>Reasoning model</h3>
-              <p class="mv-desc">The model that turns the cleaned transcript into Maya's conversational turn.</p>
-              <div class="mv-row">
-                <div class="mv-field">
-                  <label class="mv-label">Reasoning model</label>
-                  <select class="mv-select" x-model="s.reasoning_model" @change="save()">
-                    <template x-for="m in cat.reasoning_models" :key="m"><option :value="m" x-text="m"></option></template>
-                  </select>
+              <p class="mv-eyebrow">Pipeline · Step 02</p>
+              <h2 class="mv-title">Reasoning Model</h2>
+              <p class="mv-desc">Transforms the cleaned transcript into Maya's conversational turn.</p>
+              <div class="mv-card">
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Reasoning model</div></div>
+                  <div class="rhs"><select class="mv-select" x-model="s.reasoning_model" @change="save()"><template x-for="m in cat.reasoning_models" :key="m"><option :value="m" x-text="m"></option></template></select></div>
                 </div>
-                <div class="mv-field">
-                  <label class="mv-label">Persona</label>
-                  <input class="mv-input" x-model="s.persona" @change="save()" />
+                <div class="mv-list-row">
+                  <div class="lhs"><div class="mv-row-label">Persona</div></div>
+                  <div class="rhs"><input class="mv-input" style="width:200px" x-model="s.persona" @change="save()" /></div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- ===== PIPELINE / CONVERSATION ===== -->
+          <!-- ===== CONVERSATION ===== -->
           <div x-show="tab==='pipeline'" x-data="mayaPipeline()">
             <div class="mv-section">
-              <h2>Full pipeline</h2>
-              <h3>Conversation</h3>
-              <p class="mv-desc">Type (or dictate) an utterance — it's transcribed/cleaned, intent-parsed, and turned into Maya's reply by the reasoning model.</p>
+              <p class="mv-eyebrow">Full pipeline</p>
+              <h2 class="mv-title">Conversation</h2>
+              <p class="mv-desc">An utterance is transcribed, intent-parsed, and turned into Maya's reply by the reasoning model.</p>
 
               <div class="mv-convo" x-show="v.turns.length">
                 <template x-for="(t, i) in v.turns" :key="i">
                   <div class="mv-turn" :class="t.role">
                     <span x-text="t.text"></span>
-                    <span class="meta" x-show="t.intent" x-text="'intent: ' + t.intent + ' · ' + (t.latency||0) + ' ms'"></span>
+                    <span class="meta" x-show="t.intent" x-text="'intent ' + t.intent + ' · ' + (t.latency||0).toFixed(2) + 'ms'"></span>
                   </div>
                 </template>
               </div>
-              <div class="mv-empty" x-show="!v.turns.length">No turns yet — say hello to Maya below.</div>
+              <div class="mv-empty" x-show="!v.turns.length">No turns yet. Enter an utterance below to run the pipeline.</div>
 
-              <div class="mv-field" style="margin-top:16px">
-                <textarea class="mv-textarea" x-model="v.transcript" @keydown="onKeydown($event)"
-                  placeholder="e.g. Hey Maya, what's on the schedule today?"></textarea>
+              <div style="margin-top:14px">
+                <textarea class="mv-textarea" x-model="v.transcript" @keydown="onKeydown($event)" placeholder="e.g. Hey Maya, what's on the schedule today?"></textarea>
               </div>
               <div class="mv-btn-row">
-                <button class="mv-btn mv-btn-primary" @click="send()" :disabled="v.status==='thinking' || !v.transcript.trim()"
-                  x-text="v.status==='thinking' ? 'Thinking…' : 'Send to pipeline'"></button>
-                <button class="mv-btn mv-btn-ghost" @click="reset()">Clear</button>
+                <button class="mv-btn mv-btn-primary" @click="send()" :disabled="v.status==='thinking' || !v.transcript.trim()"><svg class="mv-ico mv-ico-sm"><use href="#i-send"/></svg><span x-text="v.status==='thinking' ? 'Reasoning…' : 'Send to pipeline'"></span></button>
+                <button class="mv-btn" @click="reset()">Clear</button>
               </div>
 
               <div class="mv-trace" x-show="v.lastTrace.length">
-                <div style="color:#fff;margin-bottom:6px;font-weight:700">Pipeline trace</div>
+                <div class="thead">Pipeline trace</div>
                 <template x-for="(step, i) in v.lastTrace" :key="i">
-                  <div class="step" x-text="step"></div>
+                  <div class="step"><span class="idx" x-text="String(i+1).padStart(2,'0')"></span><span x-text="step"></span></div>
                 </template>
               </div>
             </div>
@@ -260,17 +263,18 @@
       </div>
 
       <!-- Drop-in docs -->
-      <div class="docs">
-        <h2>Drop into any surface</h2>
-        <pre><code>&lt;link rel="stylesheet" href="/sdk/maya-voice-sdk.css"&gt;
+      <div class="docs mv-section">
+        <p class="mv-eyebrow">Integration</p>
+        <h2 class="mv-title">Drop into any surface</h2>
+        <pre>&lt;link rel="stylesheet" href="/sdk/maya-voice-sdk.css"&gt;
 &lt;script defer src="/sdk/maya-voice-sdk.js"&gt;&lt;/script&gt;
-&lt;script defer src="/sdk/vendor/alpine.min.js"&gt;&lt;/script&gt;  &lt;!-- Alpine LAST --&gt;
+&lt;script defer src="/sdk/vendor/alpine.min.js"&gt;&lt;/script&gt;   // Alpine last
 
 &lt;div x-data="mayaVocalInput()"&gt;…&lt;/div&gt;
 &lt;div x-data="mayaDetectionEngine()"&gt;…&lt;/div&gt;
 &lt;div x-data="mayaSettingsPanel()"&gt;…&lt;/div&gt;
-&lt;div x-data="mayaPipeline()"&gt;…&lt;/div&gt;</code></pre>
-        <p class="mv-hint">All components read/write one shared <code>Alpine.store("mayaVoice")</code>, so they stay in sync wherever you place them. Backend: <code>GET /api/voice/settings/defaults</code>, <code>POST /api/voice/turn</code>.</p>
+&lt;div x-data="mayaPipeline()"&gt;…&lt;/div&gt;</pre>
+        <p class="mv-desc">All components share one <span class="mv-mono">Alpine.store("mayaVoice")</span>. Backend: <span class="mv-mono">GET /api/voice/settings/defaults</span>, <span class="mv-mono">POST /api/voice/turn</span>.</p>
       </div>
     </div>
 

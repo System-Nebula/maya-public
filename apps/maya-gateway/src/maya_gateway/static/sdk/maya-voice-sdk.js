@@ -69,7 +69,15 @@
       devices: { inputs: [], outputs: [] },
 
       // live audio/detection state
-      audio: { running: false, source: null, level: 0, peak: 0, speaking: false },
+      // bars: geometric frequency spectrum (0..1), driven mathematically.
+      audio: {
+        running: false,
+        source: null,
+        level: 0,
+        peak: 0,
+        speaking: false,
+        bars: new Array(28).fill(0),
+      },
 
       // pipeline state
       transcript: "",
@@ -192,6 +200,8 @@
         this._lastAboveTs = 0;
         var self = this;
         var buf = new Uint8Array(this._analyser.fftSize);
+        var freq = new Uint8Array(this._analyser.frequencyBinCount);
+        var nBars = this.audio.bars.length;
 
         function frame(ts) {
           if (!self.audio.running) return;
@@ -216,6 +226,20 @@
           var level = clamp(rms * (self.settings.input_gain || 1) * 1.8, 0, 1);
           self.audio.level = level;
           if (level > self.audio.peak) self.audio.peak = level;
+
+          // Geometric spectrum: average FFT bins into nBars, log-ish spread.
+          self._analyser.getByteFrequencyData(freq);
+          var usable = Math.floor(freq.length * 0.62); // drop empty high end
+          var bars = self.audio.bars;
+          for (var b = 0; b < nBars; b++) {
+            var lo = Math.floor((b / nBars) * usable);
+            var hi = Math.max(lo + 1, Math.floor(((b + 1) / nBars) * usable));
+            var acc = 0;
+            for (var k = lo; k < hi; k++) acc += freq[k];
+            var val = clamp((acc / (hi - lo) / 255) * (self.settings.input_gain || 1), 0, 1);
+            // light smoothing for a stable, non-jittery readout
+            bars[b] = bars[b] * 0.6 + val * 0.4;
+          }
 
           // --- detection engine (VAD with hangover) ---
           var now = ts || performance.now();
@@ -246,6 +270,7 @@
         this.audio.running = false;
         this.audio.speaking = false;
         this.audio.level = 0;
+        this.audio.bars = this.audio.bars.map(function () { return 0; });
         if (this._raf) cancelAnimationFrame(this._raf);
         this._raf = null;
         if (this._stream) {
