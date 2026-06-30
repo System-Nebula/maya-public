@@ -19,16 +19,25 @@ here; Discord UX and Firefox history wiring live in internal `~/Workspace`.
 
 Handoff instructions: [research-internal-handoff.md](research-internal-handoff.md)
 
-## Voice assistant
+## Audio domain (voice / ASR / TTS)
 
-Public ships voice/assistant **contracts** in `maya-contracts`, the **turn-loop reference**
-in `packages/maya-voice`, and **fake-provider benchmarks** via `make voice-eval`.
+Public summary: [maya-audio-domain-summary.md](maya-audio-domain-summary.md). Detailed steering
+spec: `Vault/quartz-site/content/maya-architecture/maya-audio-domain.md`.
 
-Realtime audio (Discord VC PCM in, streaming TTS out, STT gateway) integrates in
-private `~/Workspace` first. Do not add GPU/CUDA credentials or homelab URLs here.
+Public ships the **audio bounded context** `packages/maya-audio` (ASR/TTS backends, realtime
+stream sessions, batch jobs) behind a DRY backend layer, plus voice/assistant **contracts** in
+`maya-contracts`, the **turn-loop reference** in `packages/maya-voice`, **fake-provider
+benchmarks** via `make voice-eval`, and the **vendored GPU stack** in `packages/maya-voice-stack`
+(Jovan's voice-agent demo) with WAV replay benchmarks, OTEL/Langfuse tracing, and Playwright web
+transfer tests.
 
-LLM runtime profiles (`LLM_PROVIDER=lmstudio|vllm|openai|fake`) are env-var only —
-no provider-specific code forks in public packages.
+**Realtime now builds in public** (revised 2026-06-29): the realtime stream plane (gateway
+dictation `/api/audio/stream`, Discord VC boundary) lands here behind **fake backends** — CI runs
+zero-CUDA. The earlier "Discord VC integrates in private `~/Workspace` first" rule is retired; what
+stays private is **secrets and GPU coupling, not the code**. Do not add GPU/CUDA credentials,
+homelab URLs, model weights, or private Discord logs. Real GPU inference backends ship behind the
+`[gpu]` extra; full-stack voice tests run on self-hosted GPU with `OPENROUTER_API_KEY` /
+`VA_LLM_API_KEY` via env vars only.
 
 ## Forge imagine UAT
 

@@ -23,4 +23,6 @@ maya-graph = { workspace = true }
 maya-research = { workspace = true }
 maya-image = { workspace = true }
 maya-llm = { workspace = true }
+maya-audio = { workspace = true }
 maya-voice = { workspace = true }
+maya-voice-stack = { workspace = true }

@@ -14,6 +14,7 @@ class CapabilityFamily(str, Enum):
     TEXT_GENERATION = "text_generation"
     TEXT_EMBEDDING = "text_embedding"
     VISION_LANGUAGE = "vision_language"
+    ASR = "asr"
     TTS = "tts"
     IMAGE_GENERATION = "image_generation"
     RERANKER = "reranker"

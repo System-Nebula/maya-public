@@ -26,6 +26,55 @@ def _include_imagine_router() -> None:
         log.warning("imagine_router unavailable: %s", exc)
 
 
+def _make_asr_backend():
+    """Select the ASR backend from env. Defaults to the zero-GPU fake backend.
+
+    Set MAYA_ASR_BACKEND=whisper for real local dictation via faster-whisper.
+    """
+    name = os.environ.get("MAYA_ASR_BACKEND", "fake").strip().lower()
+    if name in ("", "fake"):
+        return None  # router default (FakeAsrBackend)
+    if name == "whisper":
+        from maya_audio.backends.asr_faster_whisper import FasterWhisperBackend
+
+        return FasterWhisperBackend(
+            model_id=os.environ.get("MAYA_WHISPER_MODEL", "small.en"),
+            device=os.environ.get("MAYA_WHISPER_DEVICE", "cpu"),
+            compute_type=os.environ.get("MAYA_WHISPER_COMPUTE") or None,
+        )
+    raise ValueError(f"unknown MAYA_ASR_BACKEND={name!r} (expected 'fake' or 'whisper')")
+
+
+def _include_audio_router() -> None:
+    """Mount /api/audio routes from maya_audio. Fake backend by default; whisper opt-in.
+
+    If the requested backend can't load (missing numpy/libstdc++, no model), fall back to the
+    fake backend — loudly — so the audio surface still works instead of silently 404-ing.
+    """
+    backend_name = os.environ.get("MAYA_ASR_BACKEND", "fake")
+    try:
+        from maya_audio.router import make_audio_router
+    except Exception as exc:  # noqa: BLE001
+        log.error("audio_router unavailable (import failed): %s", exc, exc_info=True)
+        return
+
+    backend = None
+    try:
+        backend = _make_asr_backend()
+    except Exception as exc:  # noqa: BLE001
+        log.error(
+            "ASR backend %r failed to load — falling back to fake. Cause: %s",
+            backend_name,
+            exc,
+            exc_info=True,
+        )
+        backend = None  # make_audio_router defaults to FakeAsrBackend
+
+    app.include_router(make_audio_router(asr_backend=backend))
+    effective = backend_name if backend is not None else "fake (fallback)"
+    log.info("audio_router mounted (asr_backend=%s)", effective)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging("maya-gateway", log_level="INFO")
@@ -57,6 +106,9 @@ app.include_router(research.router)
 
 # Imagine /gateway/imagine — in-repo maya_image.api
 _include_imagine_router()
+
+# Audio /api/audio — in-repo maya_audio.router (fake backends, pass 1)
+_include_audio_router()
 
 static_dir = Path(__file__).with_name("static").resolve()
 

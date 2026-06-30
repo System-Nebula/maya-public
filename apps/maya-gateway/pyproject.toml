@@ -12,6 +12,7 @@ dependencies = [
     "itsdangerous>=2.2",
     "maya-contracts",
     "arena-core",
+    "maya-audio",
     "maya-db",
     "maya-image",
     "maya-feeds",
@@ -25,6 +26,7 @@ dependencies = [
 [tool.uv.sources]
 maya-contracts = { workspace = true }
 arena-core = { workspace = true }
+maya-audio = { workspace = true }
 maya-db = { workspace = true }
 maya-image = { workspace = true }
 maya-feeds = { workspace = true }

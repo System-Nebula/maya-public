@@ -182,6 +182,31 @@ from maya_contracts.research import (
     SynthesisBundle,
     WebSearchResult,
 )
+from maya_contracts.asr import (
+    AsrFeedbackRequest,
+    AsrSessionOpen,
+    AsrSurface,
+    AsrTranscriptEvent,
+    LatencyRecord,
+)
+from maya_contracts.audio_jobs import (
+    AudioJob,
+    AudioJobArtifact,
+    AudioJobCreate,
+    AudioJobKind,
+    AudioJobProgress,
+    AudioJobStatus,
+)
+from maya_contracts.media import (
+    Annotation,
+    AnnotationKind,
+    MediaAsset,
+    MediaContainer,
+    MediaTrack,
+    MediaTrackKind,
+    SceneGraphRef,
+    TimelineSpan,
+)
 from maya_contracts.registry import (
     Artifact,
     CapabilityFamily,
@@ -195,6 +220,25 @@ from maya_contracts.registry import (
 )
 
 __all__ = [
+    "AsrFeedbackRequest",
+    "AsrSessionOpen",
+    "AsrSurface",
+    "AsrTranscriptEvent",
+    "LatencyRecord",
+    "AudioJob",
+    "AudioJobArtifact",
+    "AudioJobCreate",
+    "AudioJobKind",
+    "AudioJobProgress",
+    "AudioJobStatus",
+    "Annotation",
+    "AnnotationKind",
+    "MediaAsset",
+    "MediaContainer",
+    "MediaTrack",
+    "MediaTrackKind",
+    "SceneGraphRef",
+    "TimelineSpan",
     "AssistantTurn",
     "BargeInMode",
     "CancelReason",

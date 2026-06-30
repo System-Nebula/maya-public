@@ -7,6 +7,7 @@ import logging
 import time
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
+from typing import Protocol, runtime_checkable
 
 from maya_contracts.assistant import CancelReason, LlmProviderProfile
 from maya_contracts.voice import BargeInMode, DeliveryMode, VoiceEvent, VoiceEventType, VoiceTurnState
@@ -26,6 +27,22 @@ class TurnMetrics:
     # Distinguishes a None latency caused by cancel/error from a clean turn.
     cancel_reason: CancelReason | None = None
     error: str | None = None
+
+
+@runtime_checkable
+class SttSource(Protocol):
+    """A turn's speech source: capture+transcribe one utterance. Satisfied by the fake
+    below or by a ``maya-audio`` backend adapter (an AsrBackend bound to captured audio)."""
+
+    async def transcribe(self) -> str: ...
+
+
+@runtime_checkable
+class TtsSource(Protocol):
+    """Streaming speech synthesis with barge-in stop. Satisfied by the fake below or by a
+    ``maya-audio`` TtsBackend (its ``stream`` already matches this shape)."""
+
+    def stream(self, text: str, *, stop: "CancellationToken | None" = ...) -> AsyncIterator[bytes]: ...
 
 
 @dataclass
@@ -58,8 +75,8 @@ class TurnLoop:
     def __init__(
         self,
         *,
-        stt: _FakeStt | None = None,
-        tts: _FakeTts | None = None,
+        stt: SttSource | None = None,
+        tts: TtsSource | None = None,
         llm_config: LlmConfig | None = None,
         delivery: DeliveryMode = DeliveryMode.FULL,
         barge_mode: BargeInMode = BargeInMode.SMART,

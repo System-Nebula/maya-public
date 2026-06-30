@@ -13,8 +13,10 @@ E2E_DIR := tests/e2e
 GATEWAY_PORT ?= 8090
 PGHOST ?= localhost
 PGPORT ?= 5433
-PGUSER ?= postgres
+PGUSER ?= maya
+PGPASSWORD ?= maya
 PGDATABASE ?= maya_public
+DATABASE_URL ?= postgresql+asyncpg://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)
 
 # NixOS-friendly Playwright runner: borrow the patched chromium from
 # nixpkgs (playwright-driver.browsers) so we don't try to launch a generic
@@ -24,9 +26,17 @@ PLAYWRIGHT_BROWSERS_PATH ?= $(shell nix-shell -p playwright-driver.browsers --ru
 
 WORKSPACE_ROOT ?= $(HOME)/Workspace
 
+# Real local dictation by default. Override with `make gateway-dev MAYA_ASR_BACKEND=fake`.
+# numpy/ctranslate2 need libstdc++ + libz on the loader path; pull both from nixpkgs so we
+# don't hardcode /nix/store hashes (which get garbage-collected).
+MAYA_ASR_BACKEND ?= whisper
+NUMPY_NIX_LIBS ?= $(shell nix-shell -p stdenv.cc.cc.lib zlib.out --run 'for p in $$buildInputs; do printf "%s/lib:" "$$p"; done' 2>/dev/null)
+
 .PHONY: help homepage-deps homepage-dev homepage-build homepage-deploy \
-        gateway-dev gateway-test test typecheck voice-eval e2e-deps e2e-install e2e-test docker-build clean-homepage \
+        gateway-dev gateway-test test typecheck voice-eval voice-stack-test voice-e2e-gpu voice-benchmark voice-e2e \
+        e2e-deps e2e-install e2e-test docker-build clean-homepage \
         feeds-migrate ingest-dev ingest-poll ingest-embed ingest-backfill ingest-analyze ingest-parse-intel \
+        bootstrap-ukf bootstrap-misskatie \
         research-test research-flow \
         db-create db-shell slskd-ingest-fixtures slskd-worker slskd-status slskd-probe \
         slskd-export-queue slskd-batch slskd-history-ingest slskd-worker-once slskd-album-grab \
@@ -46,10 +56,20 @@ homepage-build: ## Build the homepage SPA into dist/
 
 homepage-deploy: homepage-build ## Build and copy the SPA into the gateway static dir
 	mkdir -p $(GATEWAY_STATIC)
-	rm -rf $(GATEWAY_STATIC)/*
-	cp -R $(HOMEPAGE_DIR)/dist/. $(GATEWAY_STATIC)/
+	@tmp=$$(mktemp -d); \
+	for keep in gateway demo artifacts; do \
+	  if [ -d "$(GATEWAY_STATIC)/$$keep" ]; then cp -a "$(GATEWAY_STATIC)/$$keep" "$$tmp/"; fi; \
+	done; \
+	rm -rf $(GATEWAY_STATIC)/*; \
+	cp -R $(HOMEPAGE_DIR)/dist/. $(GATEWAY_STATIC)/; \
+	for keep in gateway demo artifacts; do \
+	  if [ -d "$$tmp/$$keep" ]; then cp -a "$$tmp/$$keep" "$(GATEWAY_STATIC)/"; fi; \
+	done; \
+	rm -rf "$$tmp"
 
-gateway-dev: ## Run the FastAPI gateway in development mode (defaults to :$(GATEWAY_PORT))
+gateway-dev: ## Run the FastAPI gateway in dev mode with real whisper dictation (:$(GATEWAY_PORT))
+	LD_LIBRARY_PATH="$(NUMPY_NIX_LIBS)$$LD_LIBRARY_PATH" MAYA_ASR_BACKEND=$(MAYA_ASR_BACKEND) \
+	DATABASE_URL=$(DATABASE_URL) \
 	WORKSPACE_ROOT=$(WORKSPACE_ROOT) PYTHONPATH=$(WORKSPACE_ROOT):$(WORKSPACE_ROOT)/src ENV=development PORT=$(GATEWAY_PORT) uv run maya-gateway
 
 gateway-test: ## Run the gateway pytest suite
@@ -61,14 +81,33 @@ test: ## Run all Python unit test suites
 	uv run --project packages/maya-image --with pytest pytest packages/maya-image/tests/ -v
 	uv run --project packages/maya-llm --extra dev --with pytest --with pytest-asyncio pytest packages/maya-llm/tests/ -v
 	uv run --project packages/maya-voice --extra dev --with pytest --with pytest-asyncio pytest packages/maya-voice/tests/ -v
+	uv run --project packages/maya-audio --extra dev --with pytest --with pytest-asyncio pytest packages/maya-audio/tests/ -v
+	uv run --project packages/maya-voice-stack --extra dev --with pytest pytest packages/maya-voice-stack/tests/ -v -m "not gpu"
 	uv run --project packages/maya-contracts --with pytest pytest packages/maya-contracts/tests/ -v
 	uv run --project apps/maya-ingest --with pytest pytest apps/maya-ingest/tests/ -v
 
 typecheck: ## Run pyright on core packages (ratchet up over time)
-	uv run --with pyright pyright packages/maya-contracts/src packages/maya-llm/src packages/maya-voice/src
+	uv run --with pyright pyright packages/maya-contracts/src packages/maya-llm/src packages/maya-voice/src packages/maya-audio/src packages/maya-voice-stack/src
 
 voice-eval: ## Run fake-provider voice latency benchmarks
 	uv run --project packages/maya-voice maya-voice-eval
+
+voice-stack-test: ## Deterministic voice stack harness tests (fake providers, no GPU)
+	VA_FAKE_STACK=1 uv run --project packages/maya-voice-stack --extra dev --with pytest \
+	  pytest packages/maya-voice-stack/tests/ -v -m "not gpu"
+
+voice-e2e-gpu: ## Full-stack WAV replay tests (CUDA + OpenRouter required)
+	uv run --project packages/maya-voice-stack --extra dev --extra gpu --with pytest \
+	  pytest packages/maya-voice-stack/tests/ -v -m gpu
+
+voice-benchmark: ## Aggregate benchmark metrics to artifacts/voice-stack/
+	VA_FAKE_STACK=1 uv run --project packages/maya-voice-stack python scripts/run_benchmark.py \
+	  --fake --scenarios packages/maya-voice-stack/fixtures/scenarios.yaml --runs 3 --warmup 1
+
+voice-e2e: e2e-deps ## Playwright voice stack web transfer test (fake stack)
+	@BROWSERS=$$(nix-shell -p playwright-driver.browsers --run 'echo $$buildInputs' 2>/dev/null | awk '{print $$1}'); \
+	cd $(E2E_DIR) && nix-shell -p $(NIX_PLAYWRIGHT_PKGS) --run \
+	  "PLAYWRIGHT_BROWSERS_PATH=$$BROWSERS PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 VA_FAKE_STACK=1 bun x playwright test -c playwright.voice.config.ts"
 
 e2e-deps: ## Install bun deps in tests/e2e
 	cd $(E2E_DIR) && bun install
@@ -103,13 +142,19 @@ clean-homepage: ## Remove the built SPA from the gateway static dir
 	rm -rf $(GATEWAY_STATIC)/*
 
 feeds-migrate: ## Run Alembic migrations for the maya-db package
-	uv run --project packages/maya-db alembic -c packages/maya-db/alembic.ini upgrade head
+	cd packages/maya-db && DATABASE_URL=$(DATABASE_URL) uv run alembic -c alembic.ini upgrade head
 
 ingest-dev: ## Start a Prefect worker that runs the ingest flows
-	uv run --project apps/maya-ingest prefect worker start -p default
+	DATABASE_URL=$(DATABASE_URL) uv run --project apps/maya-ingest prefect worker start -p default
 
 ingest-poll: ## One-shot: run the subscription poll flow now
-	uv run --project apps/maya-ingest maya-ingest poll
+	DATABASE_URL=$(DATABASE_URL) uv run --project apps/maya-ingest maya-ingest poll
+
+bootstrap-ukf: ## Bootstrap UKF label + artist follows (requires gateway on :$(GATEWAY_PORT))
+	uv run --with httpx python scripts/bootstrap_ukf_follow.py
+
+bootstrap-misskatie: ## Bootstrap MissKatie follow + homepage upload alerts
+	uv run --with httpx python scripts/bootstrap_misskatie_follow.py
 
 ingest-embed: ## One-shot: run the embedding batch flow now
 	uv run --project apps/maya-ingest maya-ingest embed
