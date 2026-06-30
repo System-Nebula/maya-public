@@ -1,6 +1,11 @@
 # Copy to .envrc (gitignored) and edit. Loaded automatically if you use direnv,
 # otherwise `source .envrc` before running gateway/ingest commands.
 
+# Reproducible toolchain via Nix: add `use flake` as the first line of your
+# .envrc so direnv enters the pinned dev shell (see flake.nix). Equivalent to
+# running `nix develop` manually.
+# use flake
+
 # Gateway / ingest both read DATABASE_URL via maya_db.connection.get_engine.
 export DATABASE_URL="postgresql+asyncpg://postgres:postgres@localhost:5433/maya_public"
 
