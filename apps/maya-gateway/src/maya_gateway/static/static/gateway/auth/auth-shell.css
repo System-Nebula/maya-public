@@ -1,0 +1,219 @@
+.maya-auth-gate,
+.maya-auth-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 360;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(17 17 27 / 0.92);
+  backdrop-filter: blur(12px);
+  padding: 1rem;
+}
+
+.maya-auth-panel {
+  width: 100%;
+  max-width: 26rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(30 30 46 / 0.95);
+  padding: 1.5rem;
+  box-shadow: 0 24px 48px rgb(0 0 0 / 0.45);
+}
+
+.maya-auth-panel h1 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.maya-auth-panel p {
+  font-size: 0.75rem;
+  color: rgb(166 173 200);
+  margin: 0 0 1.25rem;
+}
+
+.maya-auth-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.maya-auth-tabs button {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: transparent;
+  color: rgb(166 173 200);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.maya-auth-tabs button.active {
+  background: rgb(137 180 250 / 0.15);
+  border-color: rgb(137 180 250 / 0.4);
+  color: rgb(137 180 250);
+}
+
+.maya-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.maya-auth-field input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(17 17 27);
+  color: rgb(205 214 244);
+  font-size: 0.8125rem;
+}
+
+.maya-auth-error {
+  font-size: 0.75rem;
+  color: rgb(243 139 168);
+  margin-bottom: 0.5rem;
+}
+
+.maya-auth-primary {
+  width: 100%;
+  padding: 0.625rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(137 180 250 / 0.4);
+  background: rgb(137 180 250 / 0.2);
+  color: rgb(137 180 250);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.maya-auth-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.maya-auth-sso {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.maya-auth-sso a {
+  display: block;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  color: rgb(166 173 200);
+  font-size: 0.75rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.maya-auth-error {
+  font-size: 0.75rem;
+  color: rgb(243 139 168);
+  margin: 0.5rem 0 0;
+}
+
+.maya-auth-hint {
+  font-size: 0.6875rem;
+  color: rgb(166 173 200);
+  margin: 0.25rem 0 0;
+  text-align: center;
+}
+
+.maya-auth-waybar-wrap {
+  position: relative;
+  display: inline-flex;
+  z-index: 80;
+}
+
+.maya-auth-waybar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.04);
+  font-size: 0.6875rem;
+  color: rgb(205 214 244);
+  cursor: pointer;
+  max-width: 9rem;
+}
+
+.maya-auth-waybar-menu {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  min-width: 9rem;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(30 30 46 / 0.98);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+  z-index: 80;
+}
+
+.maya-auth-waybar-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.4375rem 0.625rem;
+  border: none;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: rgb(205 214 244);
+  font-size: 0.6875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.maya-auth-waybar-menu button:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+
+.maya-auth-waybar-menu button.danger {
+  color: rgb(243 139 168);
+}
+
+.maya-auth-waybar-menu button.danger:hover {
+  background: rgb(243 139 168 / 0.12);
+}
+
+.maya-auth-waybar-chip:hover {
+  background: rgb(255 255 255 / 0.08);
+}
+
+.maya-auth-waybar-chip .initial {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0.25rem;
+  background: rgb(137 180 250 / 0.2);
+  color: rgb(137 180 250);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.maya-auth-waybar-chip .verified {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: rgb(166 227 161);
+  flex-shrink: 0;
+}
+
+.maya-auth-waybar-chip .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

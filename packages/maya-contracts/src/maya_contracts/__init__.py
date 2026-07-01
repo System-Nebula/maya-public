@@ -222,6 +222,16 @@ from maya_contracts.registry import (
     ModelReleaseCreate,
     ModelReleaseUpdate,
 )
+from maya_contracts.voice import (
+    ConversationTurn,
+    DetectionMode,
+    OperatorVoiceSettings,
+    TurnIntent,
+    TurnRole,
+    VoiceDefaultsResponse,
+    VoiceTurnRequest,
+    VoiceTurnResponse,
+)
 
 __all__ = [
     "AsrFeedbackRequest",
@@ -408,4 +418,12 @@ __all__ = [
     "SubTaskType",
     "SynthesisBundle",
     "WebSearchResult",
+    "ConversationTurn",
+    "DetectionMode",
+    "OperatorVoiceSettings",
+    "TurnIntent",
+    "TurnRole",
+    "VoiceDefaultsResponse",
+    "VoiceTurnRequest",
+    "VoiceTurnResponse",
 ]
