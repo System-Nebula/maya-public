@@ -2,7 +2,6 @@
 
 import logging
 import os
-import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -11,33 +10,69 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from obs_client import configure_logging
 
-from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, health, intel, music, music_query, notifications, registry, research
+from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, guide, health, intel, music, music_query, notifications, registry, research, voice
 
 log = logging.getLogger("maya-gateway")
 
 
-def _include_workspace_imagine() -> None:
-    """Mount Imagine routes from in-repo maya_image, falling back to ~/Workspace."""
+def _include_imagine_router() -> None:
+    """Mount Imagine routes from in-repo maya_image."""
     try:
         from maya_image.api import router as imagine_router
 
         app.include_router(imagine_router)
-        log.info("imagine_router mounted from maya_image")
-        return
-    except Exception as exc:
-        log.debug("in-repo imagine_router unavailable: %s", exc)
-
-    workspace = Path(os.environ.get("WORKSPACE_ROOT", Path.home() / "Workspace")).resolve()
-    for p in (str(workspace), str(workspace / "src")):
-        if p not in sys.path:
-            sys.path.insert(0, p)
-    try:
-        from src.maya.api.imagine import router as imagine_router  # type: ignore[import-not-found]
-
-        app.include_router(imagine_router)
-        log.info("imagine_router mounted from workspace %s", workspace)
+        log.info("imagine_router mounted from maya_image.api")
     except Exception as exc:  # noqa: BLE001
         log.warning("imagine_router unavailable: %s", exc)
+
+
+def _make_asr_backend():
+    """Select the ASR backend from env. Defaults to the zero-GPU fake backend.
+
+    Set MAYA_ASR_BACKEND=whisper for real local dictation via faster-whisper.
+    """
+    name = os.environ.get("MAYA_ASR_BACKEND", "fake").strip().lower()
+    if name in ("", "fake"):
+        return None  # router default (FakeAsrBackend)
+    if name == "whisper":
+        from maya_audio.backends.asr_faster_whisper import FasterWhisperBackend
+
+        return FasterWhisperBackend(
+            model_id=os.environ.get("MAYA_WHISPER_MODEL", "small.en"),
+            device=os.environ.get("MAYA_WHISPER_DEVICE", "cpu"),
+            compute_type=os.environ.get("MAYA_WHISPER_COMPUTE") or None,
+        )
+    raise ValueError(f"unknown MAYA_ASR_BACKEND={name!r} (expected 'fake' or 'whisper')")
+
+
+def _include_audio_router() -> None:
+    """Mount /api/audio routes from maya_audio. Fake backend by default; whisper opt-in.
+
+    If the requested backend can't load (missing numpy/libstdc++, no model), fall back to the
+    fake backend — loudly — so the audio surface still works instead of silently 404-ing.
+    """
+    backend_name = os.environ.get("MAYA_ASR_BACKEND", "fake")
+    try:
+        from maya_audio.router import make_audio_router
+    except Exception as exc:  # noqa: BLE001
+        log.error("audio_router unavailable (import failed): %s", exc, exc_info=True)
+        return
+
+    backend = None
+    try:
+        backend = _make_asr_backend()
+    except Exception as exc:  # noqa: BLE001
+        log.error(
+            "ASR backend %r failed to load — falling back to fake. Cause: %s",
+            backend_name,
+            exc,
+            exc_info=True,
+        )
+        backend = None  # make_audio_router defaults to FakeAsrBackend
+
+    app.include_router(make_audio_router(asr_backend=backend))
+    effective = backend_name if backend is not None else "fake (fallback)"
+    log.info("audio_router mounted (asr_backend=%s)", effective)
 
 
 @asynccontextmanager
@@ -68,9 +103,14 @@ app.include_router(notifications.router)
 app.include_router(discover.router)
 app.include_router(discover_inbox.router)
 app.include_router(research.router)
+app.include_router(voice.router)
+app.include_router(guide.router)
 
-# Imagine /gateway/imagine — canonical backend from ~/Workspace
-_include_workspace_imagine()
+# Imagine /gateway/imagine — in-repo maya_image.api
+_include_imagine_router()
+
+# Audio /api/audio — in-repo maya_audio.router (fake backends, pass 1)
+_include_audio_router()
 
 static_dir = Path(__file__).with_name("static").resolve()
 
@@ -84,10 +124,14 @@ _image_root = Path(
 _image_root.mkdir(parents=True, exist_ok=True)
 app.mount("/imagine-outputs", StaticFiles(directory=str(_image_root)), name="imagine-outputs")
 
-# Gateway static assets (Alpine imagine UI)
+# Gateway static assets (Alpine imagine UI + voice SDK)
 _gateway_static = static_dir / "gateway"
 if _gateway_static.is_dir():
     app.mount("/static/gateway", StaticFiles(directory=str(_gateway_static)), name="gateway-static")
+
+_sdk_static = static_dir / "sdk"
+if _sdk_static.is_dir():
+    app.mount("/static/sdk", StaticFiles(directory=str(_sdk_static)), name="sdk-static")
 
 
 @app.get("/")

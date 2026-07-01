@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-theme="mocha">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maya · Audio Diagnostics</title>
+    <link rel="stylesheet" href="/static/gateway/audio/dictation-sdk.css" />
+    <script type="module" src="/static/gateway/audio/dictation-sdk.js"></script>
+    <script type="module" src="/static/gateway/audio/audio-monitor.js"></script>
+    <script defer src="/static/gateway/alpine.min.js"></script>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0; padding: 2rem; font: 14px/1.5 system-ui, sans-serif;
+        background: #1e1e2e; color: #cdd6f4;
+      }
+      .wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 1.25rem; }
+      h1 { font-size: 1.25rem; margin: 0; }
+      .card { background: #181825; border: 1px solid #313244; border-radius: 12px; padding: 1rem 1.25rem; }
+      .card h2 { font-size: .95rem; margin: 0 0 .75rem; color: #a6adc8; text-transform: uppercase; letter-spacing: .05em; }
+      .badge { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-weight: 600; }
+      .badge.fake { background: #45203a; color: #f38ba8; }
+      .badge.real { background: #1e3a2a; color: #a6e3a1; }
+      .hint { color: #9399b2; margin: .5rem 0 0; }
+      .meter { height: 18px; background: #11111b; border-radius: 9px; overflow: hidden; }
+      .meter > div { height: 100%; background: linear-gradient(90deg, #a6e3a1, #f9e2af, #f38ba8); transition: width 60ms linear; }
+      .row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+      .nums { font-variant-numeric: tabular-nums; color: #89b4fa; }
+      button {
+        background: #313244; color: #cdd6f4; border: 0; border-radius: 8px;
+        padding: .45rem .9rem; cursor: pointer; font: inherit;
+      }
+      button:hover { background: #45475a; }
+      button.on { background: #f38ba8; color: #11111b; }
+      .log { max-height: 220px; overflow: auto; background: #11111b; border-radius: 8px; padding: .5rem .75rem; font-family: ui-monospace, monospace; font-size: 12px; }
+      .log .final { color: #a6e3a1; }
+      .log .partial { color: #9399b2; }
+      .log .error { color: #f38ba8; }
+      .log .info, .log .t { color: #6c7086; }
+      .final-box { font-size: 1.1rem; color: #a6e3a1; min-height: 1.4em; }
+      code { background: #11111b; padding: .1rem .35rem; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap" x-data="audioMonitor()" x-init="init()">
+      <h1>🎙️ Maya · Audio Diagnostics</h1>
+
+      <div class="card">
+        <h2>Active ASR backend</h2>
+        <span class="badge" :class="asrModel === 'fake-asr' ? 'fake' : 'real'" x-text="asrModel"></span>
+        <p class="hint" x-text="backendHint"></p>
+      </div>
+
+      <div class="card">
+        <h2>1 · Mic level meter <span class="hint">(client-side, no backend)</span></h2>
+        <div class="meter"><div :style="`width: ${Math.min(100, peak * 140).toFixed(0)}%`"></div></div>
+        <div class="row" style="margin-top:.75rem">
+          <button :class="meterOn ? 'on' : ''" @click="meterOn ? stopMeter() : startMeter()"
+                  x-text="meterOn ? 'Stop mic' : 'Start mic'"></button>
+          <span class="nums">rms <span x-text="level.toFixed(3)"></span></span>
+          <span class="nums">peak <span x-text="peak.toFixed(3)"></span></span>
+          <span class="nums"><span x-text="db"></span> dBFS</span>
+        </div>
+        <p class="hint">Speak — the bar should move. Flat bar = the mic isn't capturing audio.</p>
+      </div>
+
+      <div class="card">
+        <h2>2 · Dictation stream <span class="hint">(full pipeline → /api/audio/stream)</span></h2>
+        <div class="row">
+          <button :class="streamOn ? 'on' : ''" @click="streamOn ? stopStream() : startStream()"
+                  x-text="streamOn ? 'Stop stream' : 'Start stream'"></button>
+          <span class="nums">frames sent <span x-text="framesSent"></span></span>
+          <span class="nums">bytes <span x-text="bytesSent"></span></span>
+        </div>
+        <p class="hint">
+          <code>frames sent</code> &gt; 0 means audio is leaving the browser. If it stays 0, the
+          capture/worklet is broken. Frames flowing but no events = a backend/VAD issue.
+        </p>
+        <p style="margin:.5rem 0 .25rem; color:#a6adc8">Last final transcript:</p>
+        <div class="final-box" x-text="lastFinal || '—'"></div>
+        <p style="margin:.75rem 0 .25rem; color:#a6adc8">Event log:</p>
+        <div class="log">
+          <template x-for="(e, i) in events" :key="i">
+            <div>
+              <span class="t" x-text="e.t"></span>
+              <span :class="e.kind" x-text="' [' + e.kind + '] '"></span>
+              <span x-text="e.text"></span>
+            </div>
+          </template>
+          <div x-show="events.length === 0" class="hint">no events yet</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

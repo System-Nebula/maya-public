@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maya — Imagine</title>
+  <link rel="stylesheet" href="/static/gateway/gateway.css">
+  <script defer src="/static/gateway/imagine-store.js"></script>
+  <script defer src="/static/gateway/feed-renderer.js"></script>
+  <script defer src="/static/gateway/imagine-app.js"></script>
+  <script defer src="/static/gateway/alpine.min.js"></script>
+</head>
+<body>
+<script type="application/json" id="imagine-bootstrap">
+{{ bootstrap_json | safe }}
+</script>
+<div class="imagine-alpine" x-data="imagineApp()">
+  <header class="imagine-header">
+    <h1>Maya</h1>
+    <div id="imagine-leaderboard" class="imagine-leaderboard"></div>
+    <span class="sse-indicator" :class="{ disconnected: !$store.imagineStore.sseConnected }"
+          x-text="$store.imagineStore.sseConnected ? 'live' : 'polling'"></span>
+  </header>
+
+  <div id="gateway-feed" class="imagine-feed"></div>
+
+  <div id="imagine-empty" class="imagine-empty">
+    <h2>What will we create today?</h2>
+    <p>Describe an image — we'll pit Z-Image Turbo vs Krea 2 in a blind arena.</p>
+  </div>
+
+  <div class="imagine-composer-wrap">
+    <form class="imagine-composer" @submit.prevent="submit()" method="post" action="/gateway/imagine/generate">
+      <span class="imagine-badge">imagine</span>
+      <input type="hidden" name="workflow_id" value="{{ default_workflow_id }}">
+      <input type="hidden" name="arena_mode" value="default">
+      <input type="text" name="prompt" x-model="prompt" @keydown="onKeydown($event)"
+             placeholder="Describe an image…" autocomplete="off" required>
+      <button type="submit" :disabled="!prompt.trim() || submitting" aria-label="Generate">↑</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

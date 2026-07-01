@@ -1,0 +1,35 @@
+{
+  "name": "Maya Handbook",
+  "navigation": [
+    {
+      "group": "Get Started",
+      "pages": [
+        { "title": "Overview", "slug": "index" },
+        { "title": "Kitchen Sink", "slug": "kitchen-sink" }
+      ]
+    },
+    {
+      "group": "Control Panel",
+      "pages": [
+        { "title": "Overview", "slug": "control-panel/overview" },
+        { "title": "Audio Interfaces", "slug": "control-panel/audio-interfaces" },
+        { "title": "Detection Engine", "slug": "control-panel/detection-engine" },
+        { "title": "Dictation (Wispr)", "slug": "control-panel/dictation" },
+        { "title": "Reasoning", "slug": "control-panel/reasoning" }
+      ]
+    },
+    {
+      "group": "Preferences",
+      "pages": [
+        { "title": "User Preferences", "slug": "preferences" }
+      ]
+    },
+    {
+      "group": "Internal",
+      "pages": [
+        { "title": "Public Boundary", "slug": "public-boundary" },
+        { "title": "Research Handoff", "slug": "research-internal-handoff" }
+      ]
+    }
+  ]
+}

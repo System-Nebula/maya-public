@@ -163,6 +163,7 @@ class ArenaVoteView(discord.ui.View):
                     "up",
                 )
                 await asyncio.to_thread(self.arena.apply_sentiment_elo, self.battle_id, choice, "up")
+            await asyncio.to_thread(self.arena.complete_battle, self.battle_id)
             await interaction.response.send_message(f"Vote recorded for `{choice.upper()}`", ephemeral=True)
         except Exception as exc:
             logger.warning(

@@ -1,7 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const PORT = Number(process.env.MAYA_GATEWAY_PORT ?? 8765);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
+const E2E_ROOT = path.dirname(fileURLToPath(import.meta.url));
+const IMAGE_ROOT = path.join(E2E_ROOT, ".artifacts", "maya-image");
 
 export default defineConfig({
   testDir: "./tests",
@@ -27,6 +31,8 @@ export default defineConfig({
     env: {
       PORT: String(PORT),
       ENV: "production",
+      MAYA_FAKE_COMFY: "1",
+      MAYA_IMAGE_ROOT: IMAGE_ROOT,
     },
     stdout: "pipe",
     stderr: "pipe",

@@ -19,6 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
     op.create_table(
         "arena_candidates",
         sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("uuid_generate_v4()"), nullable=False),
@@ -41,11 +42,11 @@ def upgrade() -> None:
     op.create_table(
         "arena_battles",
         sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("uuid_generate_v4()"), nullable=False),
-        sa.Column("candidate_a_id", sa.String(length=36), nullable=False),
-        sa.Column("candidate_b_id", sa.String(length=36), nullable=False),
+        sa.Column("candidate_a_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("candidate_b_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("prompt", sa.Text(), nullable=False),
         sa.Column("prompt_source", sa.Text(), nullable=True),
-        sa.Column("winner_id", sa.String(length=36), nullable=True),
+        sa.Column("winner_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("status", sa.String(length=16), nullable=False, server_default="open"),
         sa.Column("votes_a", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("votes_b", sa.Integer(), nullable=False, server_default="0"),

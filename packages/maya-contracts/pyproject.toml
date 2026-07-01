@@ -5,6 +5,9 @@ description = "Pydantic schema source of truth for all Maya public APIs"
 requires-python = ">=3.11"
 dependencies = ["pydantic>=2.0"]
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

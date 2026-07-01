@@ -25,6 +25,9 @@ async def test_planning_phase_produces_plan():
     with patch(
         "maya_research.agent.nodes.coordinator.find_prior_research",
         new=AsyncMock(return_value=[]),
+    ), patch(
+        "maya_research.agent.nodes.planner.llm_available",
+        return_value=False,
     ):
         result = await run_research_planning(state)
     assert result.get("plan") is not None

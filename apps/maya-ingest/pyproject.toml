@@ -9,6 +9,7 @@ dependencies = [
     "maya-db",
     "maya-feeds",
     "maya-graph",
+    "maya-llm",
     "maya-research",
     "obs-client",
     "sqlalchemy>=2.0",
@@ -20,6 +21,7 @@ maya-contracts = { workspace = true }
 maya-db = { workspace = true }
 maya-feeds = { workspace = true }
 maya-graph = { workspace = true }
+maya-llm = { workspace = true }
 maya-research = { workspace = true }
 obs-client = { workspace = true }
 

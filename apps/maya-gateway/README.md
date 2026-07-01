@@ -20,6 +20,17 @@ The root path (`/`) serves the built `hyprstart` SPA — a dark, Hyprland-themed
 
 Static assets live in `src/maya_gateway/static/` (copied from the `start-page` build output).
 
+### UI stacks
+
+| Path | Stack |
+|------|-------|
+| `/` | React hyprstart SPA + Alpine `micInput` islands (`alpine.min.js`, `dictation-sdk.js`) |
+| `/gateway/imagine` | Alpine.js full page |
+| `/static/gateway/audio/*` | Voice SDK (`micInput`, `eqPanel`) |
+
+Voice widgets use the **Alpine gateway pattern** (same as Imagine), not a React bridge.
+Preact is a possible future hyprstart shell migration; voice stays on gateway static JS.
+
 ### Rebuild the frontend
 
 ```bash

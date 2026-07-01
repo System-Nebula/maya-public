@@ -1,0 +1,91 @@
+/* micInput — Jovan voice-agent pulse semantics at search-bar chip scale */
+
+.mic-input-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+}
+
+.mic-input-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgb(var(--accent, 137 180 250));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mic-input-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(var(--accent, 137 180 250) / 0.2);
+  color: rgb(var(--accent, 137 180 250));
+  cursor: pointer;
+  transition: transform 0.12s, filter 0.2s, background 0.2s, color 0.2s;
+}
+
+.mic-input-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: scale(1.05);
+}
+
+.mic-input-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mic-input-btn--active {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
+}
+
+.mic-input-btn--hearing .mic-input-pulse {
+  animation: mic-input-pulse 1s ease-out infinite;
+  background: #22c55e;
+}
+
+.mic-input-btn--transcribing .mic-input-pulse {
+  animation: mic-input-pulse 1.6s ease-out infinite;
+  background: #f59e0b;
+}
+
+.mic-input-btn--listening .mic-input-pulse {
+  animation: mic-input-pulse 1.8s ease-out infinite;
+  background: rgb(var(--accent, 137 180 250));
+}
+
+.mic-input-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.mic-input-hint {
+  min-height: 1.25rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgba(var(--subtext, 166 173 200) / 0.85);
+}
+
+@keyframes mic-input-pulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
