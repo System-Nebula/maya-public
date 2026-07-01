@@ -26,3 +26,5 @@ maya-llm = { workspace = true }
 maya-audio = { workspace = true }
 maya-voice = { workspace = true }
 maya-voice-stack = { workspace = true }
+maya-tools = { workspace = true }
+maya-spider = { workspace = true }

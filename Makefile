@@ -33,10 +33,10 @@ MAYA_ASR_BACKEND ?= whisper
 NUMPY_NIX_LIBS ?= $(shell nix-shell -p stdenv.cc.cc.lib zlib.out --run 'for p in $$buildInputs; do printf "%s/lib:" "$$p"; done' 2>/dev/null)
 
 .PHONY: help homepage-deps homepage-dev homepage-build homepage-deploy \
-        gateway-dev gateway-test test typecheck voice-eval voice-stack-test voice-e2e-gpu voice-benchmark voice-e2e \
+        gateway-dev gateway-test test typecheck voice-eval voice-asr-arena voice-stack-test voice-e2e-gpu voice-benchmark voice-e2e \
         e2e-deps e2e-install e2e-test docker-build clean-homepage \
         feeds-migrate ingest-dev ingest-poll ingest-embed ingest-backfill ingest-analyze ingest-parse-intel \
-        bootstrap-ukf bootstrap-misskatie \
+        seed-profiles repair-youtube-channels check-upload-alerts \
         research-test research-flow \
         db-create db-shell slskd-ingest-fixtures slskd-worker slskd-status slskd-probe \
         slskd-export-queue slskd-batch slskd-history-ingest slskd-worker-once slskd-album-grab \
@@ -85,12 +85,19 @@ test: ## Run all Python unit test suites
 	uv run --project packages/maya-voice-stack --extra dev --with pytest pytest packages/maya-voice-stack/tests/ -v -m "not gpu"
 	uv run --project packages/maya-contracts --with pytest pytest packages/maya-contracts/tests/ -v
 	uv run --project apps/maya-ingest --with pytest pytest apps/maya-ingest/tests/ -v
+	uv run --project packages/maya-graph --with pytest pytest packages/maya-graph/tests/ -v
+	uv run --project packages/maya-spider --with pytest --with pytest-asyncio pytest packages/maya-spider/tests/ -v
+	uv run --with pytest pytest tests/test_seed_operator_profile.py -v
 
 typecheck: ## Run pyright on core packages (ratchet up over time)
 	uv run --with pyright pyright packages/maya-contracts/src packages/maya-llm/src packages/maya-voice/src packages/maya-audio/src packages/maya-voice-stack/src
 
 voice-eval: ## Run fake-provider voice latency benchmarks
 	uv run --project packages/maya-voice maya-voice-eval
+
+voice-asr-arena: ## Parakeet vs faster-whisper on mapped pyLoad corpus (CPU/GPU via MAYA_WHISPER_DEVICE)
+	LD_LIBRARY_PATH="$(NUMPY_NIX_LIBS)$$LD_LIBRARY_PATH" MAYA_WHISPER_DEVICE=$${MAYA_WHISPER_DEVICE:-cpu} \
+	  uv run --project packages/maya-audio --extra gpu python scripts/run_video_asr_arena.py
 
 voice-stack-test: ## Deterministic voice stack harness tests (fake providers, no GPU)
 	VA_FAKE_STACK=1 uv run --project packages/maya-voice-stack --extra dev --with pytest \
@@ -150,11 +157,16 @@ ingest-dev: ## Start a Prefect worker that runs the ingest flows
 ingest-poll: ## One-shot: run the subscription poll flow now
 	DATABASE_URL=$(DATABASE_URL) uv run --project apps/maya-ingest maya-ingest poll
 
-bootstrap-ukf: ## Bootstrap UKF label + artist follows (requires gateway on :$(GATEWAY_PORT))
-	uv run --with httpx python scripts/bootstrap_ukf_follow.py
+seed-profiles: ## Load example operator follow/preferences (requires gateway on :$(GATEWAY_PORT))
+	uv run --with httpx python scripts/seed_operator_profile.py --profile example
 
-bootstrap-misskatie: ## Bootstrap MissKatie follow + homepage upload alerts
-	uv run --with httpx python scripts/bootstrap_misskatie_follow.py
+repair-youtube-channels: ## Resolve @handle YouTube rows to UC… + feed_url in DB
+	DATABASE_URL=$(DATABASE_URL) uv run --with httpx python scripts/repair_youtube_channels.py
+
+check-upload-alerts: ## Verify MissKatie follow + poll + gateway SSE health
+	DATABASE_URL=$(DATABASE_URL) MAYA_GATEWAY_URL=http://localhost:$(GATEWAY_PORT) \
+	  uv run --with httpx python scripts/check_upload_alerts.py \
+	  $(if $(SKIP_GATEWAY),--skip-gateway,)
 
 ingest-embed: ## One-shot: run the embedding batch flow now
 	uv run --project apps/maya-ingest maya-ingest embed

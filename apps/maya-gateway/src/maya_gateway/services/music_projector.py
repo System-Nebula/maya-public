@@ -19,40 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from maya_gateway.services.email_parse import ParsedEmail, slugify
 
-
-async def _ensure_ontology_schema(conn) -> None:
-    await conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS ontology_node (
-            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            domain text NOT NULL,
-            domain_id text NOT NULL,
-            node_type text NOT NULL,
-            label text NOT NULL,
-            slug text,
-            description text,
-            attrs jsonb NOT NULL DEFAULT '{}',
-            created_at timestamptz NOT NULL DEFAULT now(),
-            updated_at timestamptz NOT NULL DEFAULT now(),
-            UNIQUE (domain, domain_id, node_type)
-        )
-        """
-    )
-    await conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS ontology_edge (
-            source_id uuid NOT NULL,
-            target_id uuid NOT NULL,
-            edge_type text NOT NULL,
-            dimension text NOT NULL DEFAULT 'semantic',
-            weight float NOT NULL DEFAULT 1.0,
-            confidence float NOT NULL DEFAULT 1.0,
-            evidence jsonb NOT NULL DEFAULT '{}',
-            created_at timestamptz NOT NULL DEFAULT now(),
-            PRIMARY KEY (source_id, target_id, edge_type, dimension)
-        )
-        """
-    )
+from maya_graph.ontology_schema import ensure_ontology_schema
 
 
 async def project_to_ontology(parsed: ParsedEmail) -> Optional[str]:
@@ -66,7 +33,7 @@ async def project_to_ontology(parsed: ParsedEmail) -> Optional[str]:
 
     conn = await asyncpg.connect(dsn)
     try:
-        await _ensure_ontology_schema(conn)
+        await ensure_ontology_schema(conn)
         artist_id = await conn.fetchval(
             """
             INSERT INTO ontology_node (domain, domain_id, node_type, label, slug, attrs)
