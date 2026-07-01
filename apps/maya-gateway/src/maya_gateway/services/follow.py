@@ -51,6 +51,7 @@ from maya_db import (
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from maya_gateway.services.follow_enrich import enrich_youtube_channel, needs_youtube_enrich
 from maya_gateway.services.follow_resolve import resolve as _resolve_input
 
 
@@ -347,17 +348,25 @@ class FollowRepository:
             preview.platform, preview.platform_id
         )
         if existing is not None:
-            return existing
-        channel = ChannelDB(
-            platform=preview.platform.value,
-            platform_id=preview.platform_id,
-            handle=preview.handle,
-            display_name=preview.display_name,
-            feed_url=preview.feed_url,
-            cadence="weekly",
-        )
-        self.session.add(channel)
-        await self.session.flush()
+            channel = existing
+        else:
+            channel = ChannelDB(
+                platform=preview.platform.value,
+                platform_id=preview.platform_id,
+                handle=preview.handle,
+                display_name=preview.display_name,
+                feed_url=preview.feed_url,
+                cadence="weekly",
+            )
+            self.session.add(channel)
+            await self.session.flush()
+        if needs_youtube_enrich(
+            platform=channel.platform,
+            platform_id=channel.platform_id,
+            feed_url=channel.feed_url,
+        ):
+            await enrich_youtube_channel(channel)
+            await self.session.flush()
         return channel
 
     async def detach_channel(

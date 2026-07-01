@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -17,6 +17,7 @@ from maya_contracts import (
 from maya_db import ResearchRun as ResearchRunDB, get_async_session
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from maya_gateway.auth.deps import get_operator_id
 from maya_gateway.services import research_service
 
 if TYPE_CHECKING:
@@ -24,7 +25,6 @@ if TYPE_CHECKING:
 
 router = APIRouter(prefix="/api/research", tags=["research"])
 
-DEFAULT_OPERATOR_ID = "local"
 _STREAM_POLL_SECONDS = 3.0
 
 
@@ -45,9 +45,9 @@ async def create_research_run(req: CreateResearchRunRequest):
 
 @router.get("/runs", response_model=PaginatedResponse[ResearchRun])
 async def list_research_runs(
+    operator_id: Annotated[str, Depends(get_operator_id)],
     limit: int = 50,
     offset: int = 0,
-    operator_id: str = DEFAULT_OPERATOR_ID,
 ):
     return await research_service.list_runs(
         operator_id=operator_id, limit=limit, offset=offset

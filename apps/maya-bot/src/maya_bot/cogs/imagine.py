@@ -368,9 +368,9 @@ class ImagineCog(commands.Cog):
         base = self._portal_base_url()
         return (
             "Link your Discord account before using `/imagine`:\n"
-            f"1. Sign in at {base}/ with **email** (register if needed)\n"
-            f"2. Open Profile ({base}/gateway/profile) → **Connect Discord**\n"
-            "   (Do **not** use “Sign in with Discord” on the login page — that is for returning linked users only.)\n"
+            f"1. Register at {base}/ with an **invite code** (email or Google)\n"
+            f"2. Open **Accounts & Integrations** → **Connect Discord**\n"
+            "   (Do **not** use “Sign in with Discord” until Discord is linked.)\n"
             "3. Retry `/imagine`"
         )
 

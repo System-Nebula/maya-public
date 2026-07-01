@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -19,6 +19,8 @@ from maya_contracts import (
 from maya_db import Notification as NotificationDB, get_async_session, get_engine
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from maya_gateway.auth.deps import get_operator_id
 
 if TYPE_CHECKING:
     pass
@@ -43,16 +45,13 @@ def _to_response(n: NotificationDB) -> Notification:
     )
 
 
-DEFAULT_OPERATOR_ID = "local"
-
-
 @router.get("", response_model=PaginatedResponse[Notification])
 async def list_notifications(
+    operator_id: Annotated[str, Depends(get_operator_id)],
+    session: AsyncSession = Depends(get_async_session),
     limit: int = 50,
     offset: int = 0,
     read: Optional[bool] = None,
-    operator_id: str = DEFAULT_OPERATOR_ID,
-    session: AsyncSession = Depends(get_async_session),
 ):
     base = (
         select(NotificationDB)
@@ -95,7 +94,7 @@ async def mark_many_read(
 
 @router.post("/mark-all-read", response_model=dict)
 async def mark_all_read(
-    operator_id: str = DEFAULT_OPERATOR_ID,
+    operator_id: Annotated[str, Depends(get_operator_id)],
     session: AsyncSession = Depends(get_async_session),
 ):
     result = await session.execute(
@@ -111,7 +110,9 @@ async def mark_all_read(
 
 
 @router.get("/stream")
-async def stream() -> StreamingResponse:
+async def stream(
+    operator_id: Annotated[str, Depends(get_operator_id)],
+) -> StreamingResponse:
     """Server-Sent Events: emits each new unread notification as it lands."""
 
     async def event_generator():
@@ -126,7 +127,7 @@ async def stream() -> StreamingResponse:
                         select(NotificationDB)
                         .where(
                             NotificationDB.created_at > last_seen,
-                            NotificationDB.operator_id == DEFAULT_OPERATOR_ID,
+                            NotificationDB.operator_id == operator_id,
                         )
                         .order_by(NotificationDB.created_at.asc())
                     )

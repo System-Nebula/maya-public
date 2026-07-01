@@ -78,6 +78,7 @@ class MayaBot(commands.Bot):
         intents.message_content = True
         intents.reactions = True
         intents.guilds = True
+        intents.voice_states = True
 
         super().__init__(
             command_prefix="!",
@@ -88,11 +89,23 @@ class MayaBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         self.tree.on_error = self.on_app_command_error
-        for extension in ("maya_bot.cogs.imagine",):
+        extensions = ("maya_bot.cogs.imagine", "maya_bot.cogs.music", "maya_bot.cogs.chat")
+        for extension in extensions:
             try:
                 await self.load_extension(extension)
             except Exception as exc:
+                # Belt and suspenders: print in case structlog output isn't captured
+                # (e.g. a background/detached process with no log collector wired up).
                 print(f"failed to load {extension}: {exc}")
+                logger.error(
+                    "cog_load_failed",
+                    extension=extension,
+                    error=str(exc),
+                    exc_info=exc,
+                )
+        loaded = sorted(self.cogs.keys())
+        print(f"cogs loaded: {loaded}")
+        logger.info("cogs_loaded", loaded=loaded, expected_count=len(extensions))
         test_guild = os.getenv("TEST_GUILD_ID")
         if test_guild:
             guild = discord.Object(id=int(test_guild))

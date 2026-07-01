@@ -11,6 +11,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
 revision: str = "20260624_research"
@@ -19,8 +20,16 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _pgvector_available(bind) -> bool:
+    return bool(
+        bind.execute(text("SELECT 1 FROM pg_available_extensions WHERE name = 'vector'")).scalar()
+    )
+
+
 def upgrade() -> None:
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    bind = op.get_bind()
+    if _pgvector_available(bind):
+        op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
     op.create_table(
         "research_runs",

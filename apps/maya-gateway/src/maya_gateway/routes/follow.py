@@ -13,7 +13,7 @@ at a different level:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -34,17 +34,13 @@ from maya_contracts import (
 )
 from maya_db import get_async_session
 
+from maya_gateway.auth.deps import get_operator_id
 from maya_gateway.services.follow import FollowRepository, resolve_channel
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/follow", tags=["follow"])
-
-# v1 ships a single hardcoded operator: the user running this browser. The
-# Following panel hardcodes the same value in follow-api.ts. Multi-operator
-# support is wired into the schema but not exposed at the route layer yet.
-DEFAULT_OPERATOR_ID = "local"
 
 
 def _channel_to_contract(c) -> ChannelContract:  # noqa: ANN001 - sqla model
@@ -102,7 +98,7 @@ def _follow_to_contract(f) -> FollowRef:  # noqa: ANN001
 
 @router.get("/tree", response_model=FollowTreeResponse)
 async def get_tree(
-    operator_id: str = DEFAULT_OPERATOR_ID,
+    operator_id: Annotated[str, Depends(get_operator_id)],
     session: "AsyncSession" = Depends(get_async_session),
 ) -> FollowTreeResponse:
     repo = FollowRepository(session)
@@ -220,7 +216,7 @@ async def detach_channel(
 @router.post("/follows", response_model=FollowRef)
 async def follow(
     req: FollowRequest,
-    operator_id: str = DEFAULT_OPERATOR_ID,
+    operator_id: Annotated[str, Depends(get_operator_id)],
     session: "AsyncSession" = Depends(get_async_session),
 ) -> FollowRef:
     repo = FollowRepository(session)
