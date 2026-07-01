@@ -53,9 +53,9 @@ class StreamSession:
         self.vad = vad or VADGate()
         self.silence_ms = silence_ms
 
-    def _is_speech(self, samples: np.ndarray) -> bool:
-        """Fake backend bypasses VAD so pass-1 dictation works with real mic levels."""
-        if isinstance(self.backend, FakeAsrBackend):
+    def _is_speech(self, samples: np.ndarray, *, streaming: bool) -> bool:
+        """Fake backend bypasses VAD only on the streaming path (real mic quiet levels)."""
+        if streaming and isinstance(self.backend, FakeAsrBackend):
             return samples.size > 0
         return self.vad.is_speech(samples)
 
@@ -84,7 +84,7 @@ class StreamSession:
         last_text: str | None = None
         async for chunk in frames:
             samples = pcm_bytes_to_int16(chunk)
-            if not self._is_speech(samples):
+            if not self._is_speech(samples, streaming=True):
                 continue
             buffer.append(samples)
             timings.mark_first_partial()
@@ -120,7 +120,7 @@ class StreamSession:
         async for chunk in frames:
             samples = pcm_bytes_to_int16(chunk)
             frame_ms = (samples.size / self.sample_rate) * 1000.0 if samples.size else 0.0
-            if self._is_speech(samples):
+            if self._is_speech(samples, streaming=False):
                 buffer.append(samples)
                 silence_run_ms = 0.0
                 continue

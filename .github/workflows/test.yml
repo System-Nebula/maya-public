@@ -12,6 +12,23 @@ concurrency:
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: maya_public
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d maya_public"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/maya_public
+      MAYA_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/maya_public
     steps:
       - uses: actions/checkout@v4
 
@@ -26,11 +43,23 @@ jobs:
       - name: Install workspace
         run: uv sync --all-packages
 
+      - name: Run database migrations
+        run: uv run --project packages/maya-db alembic -c packages/maya-db/alembic.ini upgrade head
+
       - name: Gateway tests
-        run: uv run --project apps/maya-gateway --with pytest pytest apps/maya-gateway/tests/ -v --ignore=apps/maya-gateway/tests/test_discover_inbox_webhook.py
+        run: uv run --project apps/maya-gateway --with pytest pytest apps/maya-gateway/tests/ -v
 
       - name: maya-image tests
         run: uv run --project packages/maya-image --with pytest pytest packages/maya-image/tests/ -v
 
       - name: maya-research tests
         run: uv run --project packages/maya-research --with pytest --with pytest-asyncio pytest packages/maya-research/tests/ -v
+
+      - name: maya-contracts tests
+        run: uv run --project packages/maya-contracts --with pytest pytest packages/maya-contracts/tests/ -v
+
+      - name: maya-llm tests
+        run: uv run --project packages/maya-llm --with pytest --with pytest-asyncio pytest packages/maya-llm/tests/ -v
+
+      - name: maya-audio tests
+        run: uv run --project packages/maya-audio --with pytest --with pytest-asyncio pytest packages/maya-audio/tests/ -v

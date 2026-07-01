@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import Any, Optional
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, JSON, String, Text, func
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from maya_db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -62,17 +64,17 @@ class Battle(Base, UUIDPrimaryKey, TimestampMixin):
     __tablename__ = "arena_battles"
 
     modality: Mapped[str] = mapped_column(String(16), default="tts", nullable=False, index=True)
-    candidate_a_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("arena_candidates.id"), nullable=False
+    candidate_a_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("arena_candidates.id"), nullable=False
     )
-    candidate_b_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("arena_candidates.id"), nullable=False
+    candidate_b_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("arena_candidates.id"), nullable=False
     )
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
     prompt_source: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     input_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
-    winner_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    winner_id: Mapped[Optional[uuid.UUID]] = mapped_column(PgUUID(as_uuid=True), nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="open", nullable=False)
 
     votes_a: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
@@ -106,11 +108,11 @@ class ArenaArtifact(Base, UUIDPrimaryKey):
 
     __tablename__ = "arena_artifacts"
 
-    battle_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("arena_battles.id"), nullable=False, index=True
+    battle_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("arena_battles.id"), nullable=False, index=True
     )
-    candidate_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("arena_candidates.id"), nullable=False, index=True
+    candidate_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("arena_candidates.id"), nullable=False, index=True
     )
     slot: Mapped[str] = mapped_column(String(8), nullable=False)
     artifact_type: Mapped[str] = mapped_column(String(16), nullable=False)
@@ -130,8 +132,8 @@ class ArenaVote(Base, UUIDPrimaryKey):
 
     __tablename__ = "arena_votes"
 
-    battle_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("arena_battles.id"), nullable=False, index=True
+    battle_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("arena_battles.id"), nullable=False, index=True
     )
     user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     username: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -159,8 +161,8 @@ class ArenaSession(Base, UUIDPrimaryKey):
 
     __tablename__ = "arena_sessions"
 
-    battle_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("arena_battles.id"), nullable=False, index=True
+    battle_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("arena_battles.id"), nullable=False, index=True
     )
     started_by: Mapped[str] = mapped_column(String(255), nullable=False)
     channel_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
