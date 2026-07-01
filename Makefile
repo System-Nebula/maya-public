@@ -27,6 +27,7 @@ WORKSPACE_ROOT ?= $(HOME)/Workspace
 .PHONY: help homepage-deps homepage-dev homepage-build homepage-deploy \
         gateway-dev gateway-test e2e-deps e2e-install e2e-test docker-build clean-homepage \
         feeds-migrate ingest-dev ingest-poll ingest-embed ingest-backfill ingest-analyze ingest-parse-intel \
+        seed-profiles repair-youtube-channels check-upload-alerts \
         research-test research-flow \
         db-create db-shell slskd-ingest-fixtures slskd-worker slskd-status slskd-probe \
         slskd-export-queue slskd-batch slskd-history-ingest slskd-worker-once slskd-album-grab
@@ -80,6 +81,17 @@ ingest-dev: ## Start a Prefect worker that runs the ingest flows
 
 ingest-poll: ## One-shot: run the subscription poll flow now
 	uv run --project apps/maya-ingest maya-ingest poll
+
+seed-profiles: ## Load example operator follow/preferences (requires gateway on :$(GATEWAY_PORT))
+	uv run --with httpx python scripts/seed_operator_profile.py --profile example
+
+repair-youtube-channels: ## Resolve @handle YouTube rows to UC… + feed_url in DB
+	uv run --with httpx python scripts/repair_youtube_channels.py
+
+check-upload-alerts: ## Verify followed person + poll + gateway SSE health
+	MAYA_GATEWAY_URL=http://localhost:$(GATEWAY_PORT) \
+	  uv run --with httpx python scripts/check_upload_alerts.py \
+	  $(if $(SKIP_GATEWAY),--skip-gateway,)
 
 ingest-embed: ## One-shot: run the embedding batch flow now
 	uv run --project apps/maya-ingest maya-ingest embed

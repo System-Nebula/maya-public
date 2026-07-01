@@ -7,7 +7,13 @@ dependencies = []
 
 [tool.uv.workspace]
 members = ["packages/*", "apps/*"]
-exclude = ["apps/homepage"]
+exclude = [
+    "apps/homepage",
+    "packages/maya-audio",
+    "packages/maya-llm",
+    "packages/maya-voice",
+    "packages/maya-voice-stack",
+]
 
 [tool.uv.sources]
 maya-contracts = { workspace = true }
@@ -19,3 +25,4 @@ maya-feeds = { workspace = true }
 maya-graph = { workspace = true }
 maya-research = { workspace = true }
 maya-image = { workspace = true }
+maya-spider = { workspace = true }
