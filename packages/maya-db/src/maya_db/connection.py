@@ -11,7 +11,7 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
-DEFAULT_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/maya_public"
+DEFAULT_URL = "postgresql+asyncpg://maya:maya@localhost:5433/maya_public"
 
 
 def get_engine():

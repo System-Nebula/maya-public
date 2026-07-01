@@ -1,5 +1,6 @@
 """Database models."""
 
+from maya_db.models.auth import InviteCode, PlatformUser, UserIdentity
 from maya_db.models.arena import (
     ArenaArtifact,
     ArenaBattle,
@@ -43,6 +44,9 @@ from maya_db.models.research import (
 )
 
 __all__ = [
+    "InviteCode",
+    "PlatformUser",
+    "UserIdentity",
     "ArenaArtifact",
     "ArenaBattle",
     "ArenaCandidate",

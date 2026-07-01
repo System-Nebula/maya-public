@@ -49,3 +49,8 @@ apps/homepage/
 
 # Runtime-generated imagine artifacts (not source)
 apps/maya-gateway/src/maya_gateway/static/artifacts/
+
+# Generated / runtime (local)
+artifacts/
+apps/maya-gateway/data/
+.cursor/

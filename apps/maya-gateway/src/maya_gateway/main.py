@@ -6,11 +6,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from obs_client import configure_logging
 
-from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, health, intel, music, music_query, notifications, registry, research
+from maya_gateway.auth.validation_errors import validation_error_response
+from maya_gateway.routes import arena, auth, discover, discover_inbox, feeds, follow, health, intel, music, music_query, notifications, registry, research
 
 log = logging.getLogger("maya-gateway")
 
@@ -90,8 +92,15 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_handler(_request, exc: RequestValidationError):
+    return validation_error_response(exc)
+
+
 # API routes (all prefixed /api/* except docs)
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(arena.router)
 app.include_router(music.router)
 app.include_router(music_query.router)
@@ -137,7 +146,7 @@ async def root():
 async def spa_catchall(path: str):
     # Never shadow API, docs, gateway, or image output routes
     if path.startswith(
-        ("api/", "docs", "redoc", "openapi.json", "gateway/", "imagine-outputs/", "static/")
+        ("api/", "auth/", "docs", "redoc", "openapi.json", "gateway/", "imagine-outputs/", "static/")
     ):
         raise HTTPException(status_code=404, detail="Not found")
     target = static_dir / path
