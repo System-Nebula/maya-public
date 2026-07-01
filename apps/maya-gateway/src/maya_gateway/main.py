@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from obs_client import configure_logging
 
-from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, health, intel, music, music_query, notifications, registry, research
+from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, health, intel, music, music_query, notifications, registry, research, voice
 
 log = logging.getLogger("maya-gateway")
 
@@ -103,6 +103,7 @@ app.include_router(notifications.router)
 app.include_router(discover.router)
 app.include_router(discover_inbox.router)
 app.include_router(research.router)
+app.include_router(voice.router)
 
 # Imagine /gateway/imagine — in-repo maya_image.api
 _include_imagine_router()
@@ -122,10 +123,14 @@ _image_root = Path(
 _image_root.mkdir(parents=True, exist_ok=True)
 app.mount("/imagine-outputs", StaticFiles(directory=str(_image_root)), name="imagine-outputs")
 
-# Gateway static assets (Alpine imagine UI)
+# Gateway static assets (Alpine imagine UI + voice SDK)
 _gateway_static = static_dir / "gateway"
 if _gateway_static.is_dir():
     app.mount("/static/gateway", StaticFiles(directory=str(_gateway_static)), name="gateway-static")
+
+_sdk_static = static_dir / "sdk"
+if _sdk_static.is_dir():
+    app.mount("/static/sdk", StaticFiles(directory=str(_sdk_static)), name="sdk-static")
 
 
 @app.get("/")
