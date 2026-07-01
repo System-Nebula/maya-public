@@ -1,12 +1,25 @@
 [project]
 name = "maya-bot"
 version = "0.1.0"
-description = "Self-hostable Maya Discord bot — /imagine ComfyUI arena"
+description = "Self-hostable Maya Discord bot — /imagine ComfyUI arena, /play voice"
 requires-python = ">=3.11"
+# Runtime requires the `mpv` binary on PATH (system package, not pip-installable).
+# discord-ext-voice-recv is experimental/pre-1.0 — passive wake-word listening
+# degrades gracefully (import-guarded) if it's unavailable; `/play` still works.
 dependencies = [
     "maya-image",
     "maya-db",
+    "maya-audio",
+    "maya-contracts",
+    "maya-llm",
+    "maya-tools",
+    "maya-graph",
     "discord.py>=2.3",
+    "PyNaCl>=1.5",
+    "discord-ext-voice-recv",
+    "yt-dlp>=2024.1",
+    "aiohttp>=3.9",
+    "asyncpg>=0.29",
     "python-dotenv>=1.0",
     "structlog>=24.0",
     "opentelemetry-api>=1.20",
@@ -25,3 +38,8 @@ packages = ["src/maya_bot"]
 [tool.uv.sources]
 maya-image = { workspace = true }
 maya-db = { workspace = true }
+maya-audio = { workspace = true }
+maya-contracts = { workspace = true }
+maya-llm = { workspace = true }
+maya-tools = { workspace = true }
+maya-graph = { workspace = true }

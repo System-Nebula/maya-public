@@ -2,42 +2,79 @@
 
 import logging
 import os
-import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from obs_client import configure_logging
 
-from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, health, intel, music, music_query, notifications, registry, research, voice
+from maya_gateway.auth.validation_errors import validation_error_response
+from maya_gateway.routes import arena, auth, discover, discover_inbox, feeds, follow, health, intel, music, music_query, notifications, registry, research, voice
 
 log = logging.getLogger("maya-gateway")
 
 
-def _include_workspace_imagine() -> None:
-    """Mount Imagine routes from in-repo maya_image, falling back to ~/Workspace."""
+def _include_imagine_router() -> None:
+    """Mount Imagine routes from in-repo maya_image."""
     try:
         from maya_image.api import router as imagine_router
 
         app.include_router(imagine_router)
-        log.info("imagine_router mounted from maya_image")
-        return
-    except Exception as exc:
-        log.debug("in-repo imagine_router unavailable: %s", exc)
-
-    workspace = Path(os.environ.get("WORKSPACE_ROOT", Path.home() / "Workspace")).resolve()
-    for p in (str(workspace), str(workspace / "src")):
-        if p not in sys.path:
-            sys.path.insert(0, p)
-    try:
-        from src.maya.api.imagine import router as imagine_router  # type: ignore[import-not-found]
-
-        app.include_router(imagine_router)
-        log.info("imagine_router mounted from workspace %s", workspace)
+        log.info("imagine_router mounted from maya_image.api")
     except Exception as exc:  # noqa: BLE001
         log.warning("imagine_router unavailable: %s", exc)
+
+
+def _make_asr_backend():
+    """Select the ASR backend from env. Defaults to the zero-GPU fake backend.
+
+    Set MAYA_ASR_BACKEND=whisper for real local dictation via faster-whisper.
+    """
+    name = os.environ.get("MAYA_ASR_BACKEND", "fake").strip().lower()
+    if name in ("", "fake"):
+        return None  # router default (FakeAsrBackend)
+    if name == "whisper":
+        from maya_audio.backends.asr_faster_whisper import FasterWhisperBackend
+
+        return FasterWhisperBackend(
+            model_id=os.environ.get("MAYA_WHISPER_MODEL", "small.en"),
+            device=os.environ.get("MAYA_WHISPER_DEVICE", "cpu"),
+            compute_type=os.environ.get("MAYA_WHISPER_COMPUTE") or None,
+        )
+    raise ValueError(f"unknown MAYA_ASR_BACKEND={name!r} (expected 'fake' or 'whisper')")
+
+
+def _include_audio_router() -> None:
+    """Mount /api/audio routes from maya_audio. Fake backend by default; whisper opt-in.
+
+    If the requested backend can't load (missing numpy/libstdc++, no model), fall back to the
+    fake backend — loudly — so the audio surface still works instead of silently 404-ing.
+    """
+    backend_name = os.environ.get("MAYA_ASR_BACKEND", "fake")
+    try:
+        from maya_audio.router import make_audio_router
+    except Exception as exc:  # noqa: BLE001
+        log.error("audio_router unavailable (import failed): %s", exc, exc_info=True)
+        return
+
+    backend = None
+    try:
+        backend = _make_asr_backend()
+    except Exception as exc:  # noqa: BLE001
+        log.error(
+            "ASR backend %r failed to load — falling back to fake. Cause: %s",
+            backend_name,
+            exc,
+            exc_info=True,
+        )
+        backend = None  # make_audio_router defaults to FakeAsrBackend
+
+    app.include_router(make_audio_router(asr_backend=backend))
+    effective = backend_name if backend is not None else "fake (fallback)"
+    log.info("audio_router mounted (asr_backend=%s)", effective)
 
 
 @asynccontextmanager
@@ -55,8 +92,15 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_handler(_request, exc: RequestValidationError):
+    return validation_error_response(exc)
+
+
 # API routes (all prefixed /api/* except docs)
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(arena.router)
 app.include_router(music.router)
 app.include_router(music_query.router)
@@ -70,8 +114,11 @@ app.include_router(discover_inbox.router)
 app.include_router(research.router)
 app.include_router(voice.router)
 
-# Imagine /gateway/imagine — canonical backend from ~/Workspace
-_include_workspace_imagine()
+# Imagine /gateway/imagine — in-repo maya_image.api
+_include_imagine_router()
+
+# Audio /api/audio — in-repo maya_audio.router (fake backends, pass 1)
+_include_audio_router()
 
 static_dir = Path(__file__).with_name("static").resolve()
 
@@ -100,7 +147,7 @@ async def root():
 async def spa_catchall(path: str):
     # Never shadow API, docs, gateway, or image output routes
     if path.startswith(
-        ("api/", "docs", "redoc", "openapi.json", "gateway/", "imagine-outputs/", "static/")
+        ("api/", "auth/", "docs", "redoc", "openapi.json", "gateway/", "imagine-outputs/", "static/")
     ):
         raise HTTPException(status_code=404, detail="Not found")
     target = static_dir / path

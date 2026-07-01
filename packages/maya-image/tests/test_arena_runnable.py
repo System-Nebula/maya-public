@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from maya_image.arena.service import ArenaService
 from maya_image.service import ImageJobService
 from maya_image.workflows import get_workflow
 from maya_image.types.image_job import ImageJobInput, ImageJobStatus, ImageMode
@@ -47,31 +48,6 @@ class _Storage:
 
 
 def _make_service(*, fail_slot: str | None = None) -> ImageJobService:
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    from sqlalchemy.pool import StaticPool
-
-    from maya_image.arena.service import ArenaService
-    from maya_image.db.arena import Base as ArenaBase
-    from maya_image.db.image_job import Base as ImageBase
-
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    ArenaBase.metadata.create_all(engine)
-    ImageBase.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine, expire_on_commit=False)
-
-    class _DB:
-        def get_session(self):
-            return session_factory()
-
-    db = _DB()
-    arena_svc = ArenaService()
-    arena_svc._db = db
-
     ok_provider = _ComfyProvider()
     fail_provider = _ComfyProvider(fail_slot=fail_slot)
 
@@ -81,10 +57,10 @@ def _make_service(*, fail_slot: str | None = None) -> ImageJobService:
         return ok_provider
 
     svc = ImageJobService()
-    svc._db = db
-    svc._arena = arena_svc
     svc._storage = _Storage()
     svc._provider = provider_router
+    arena_svc = ArenaService()
+    svc._arena = arena_svc
     return svc
 
 

@@ -21,6 +21,12 @@ MatchedVia = Literal[
     "crate",
     "ontology",
     "url",
+    "wikidata",
+    "ytdlp_search",
+    # Resolved via the canonical_work/recording layer on the ontology graph
+    # (packages/maya-graph music_lookup_tool.py). Distinct from "ontology",
+    # which is reserved for the artist/track/genre display graph.
+    "graph",
 ]
 
 
@@ -72,6 +78,51 @@ class TrackInfo(StrictModel):
     videos: list[VideoRef] = []
     # Pointer back into the ontology graph (Discogs master/release pair).
     discogs: Optional[DiscogsRef] = None
+
+
+class PlaySource(StrictModel):
+    """A resolved, playable audio source for the Discord `/play` pipeline.
+
+    Distinct from ``TrackInfo``: this is the minimal shape needed to hand a
+    URL to a player (mpv), not a public-catalog display record. ``wikidata_qid``
+    is set only when the query was disambiguated via a Wikidata entity lookup;
+    playback never depends on Wikidata being reachable — it only sharpens the
+    yt-dlp search query when available.
+    """
+
+    matched_via: MatchedVia
+    stream_url: str
+    title: Optional[str] = None
+    webpage_url: Optional[str] = None
+    duration_seconds: Optional[float] = None
+    wikidata_qid: Optional[str] = None
+    track: Optional[TrackInfo] = None
+
+
+class RecordingRef(StrictModel):
+    """A concrete playable resource for a canonical work, from the graph."""
+
+    domain_id: str
+    webpage_url: Optional[str] = None
+    stream_url: Optional[str] = None
+    title: Optional[str] = None
+    duration_seconds: Optional[float] = None
+    source: Optional[str] = None
+
+
+class MusicGraphLookupInput(StrictModel):
+    """Input to the ``music_graph_lookup`` tool (packages/maya-graph)."""
+
+    query: str
+
+
+class MusicGraphLookupOutput(StrictModel):
+    """Output of the ``music_graph_lookup`` tool."""
+
+    work_qid: Optional[str] = None
+    label: Optional[str] = None
+    recording: Optional[RecordingRef] = None
+    confidence: float = 0.0
 
 
 class PlayResolveResponse(StrictModel):

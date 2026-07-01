@@ -1,0 +1,15 @@
+scenarios:
+  - id: hello_maya
+    wav: audio/hello_maya.wav
+    reference_transcript: hello maya
+    tags: [smoke, latency]
+    max_full_turn_ms: 15000
+    max_stt_ms: 3000
+    max_llm_first_token_ms: 1500
+    max_tts_first_audio_ms: 2000
+
+  - id: time_check
+    wav: audio/time_check.wav
+    reference_transcript: what time is it
+    tags: [smoke]
+    max_full_turn_ms: 15000

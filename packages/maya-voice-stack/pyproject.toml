@@ -1,0 +1,46 @@
+[project]
+name = "maya-voice-stack"
+version = "0.1.0"
+description = "Vendored Jovan voice-agent stack — STT, streaming LLM, TTS, web UI, OTEL traces"
+requires-python = ">=3.11"
+dependencies = [
+    "maya-contracts",
+    "maya-audio",
+    "numpy>=1.26",
+    "openai>=1.0",
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-otlp-proto-http>=1.20",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "soundfile>=0.12",
+]
+
+[project.optional-dependencies]
+# Demo web UI (server.py + static/) — not needed for the benchmark/regression path.
+# Production dictation UX lives in maya-audio + maya-gateway, not here.
+demo = ["fastapi>=0.110", "uvicorn>=0.27", "python-multipart>=0.0.9"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "jiwer>=3.0", "maya-voice-stack[demo]"]
+gpu = ["faster-whisper", "faster-qwen3-tts", "torch", "torchaudio", "sounddevice", "webrtcvad-wheels"]
+
+[tool.uv.sources]
+maya-contracts = { workspace = true }
+maya-audio = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/maya_voice_stack"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "gpu: full-stack voice tests requiring CUDA models and OpenRouter",
+]
+
+[project.scripts]
+maya-voice-server = "maya_voice_stack.server:main"
+maya-voice-benchmark = "maya_voice_stack.benchmark_cli:main"

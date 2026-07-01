@@ -163,6 +163,7 @@ class ArenaVoteView(discord.ui.View):
                     "up",
                 )
                 await asyncio.to_thread(self.arena.apply_sentiment_elo, self.battle_id, choice, "up")
+            await asyncio.to_thread(self.arena.complete_battle, self.battle_id)
             await interaction.response.send_message(f"Vote recorded for `{choice.upper()}`", ephemeral=True)
         except Exception as exc:
             logger.warning(
@@ -367,9 +368,9 @@ class ImagineCog(commands.Cog):
         base = self._portal_base_url()
         return (
             "Link your Discord account before using `/imagine`:\n"
-            f"1. Sign in at {base}/ with **email** (register if needed)\n"
-            f"2. Open Profile ({base}/gateway/profile) → **Connect Discord**\n"
-            "   (Do **not** use “Sign in with Discord” on the login page — that is for returning linked users only.)\n"
+            f"1. Register at {base}/ with an **invite code** (email or Google)\n"
+            f"2. Open **Accounts & Integrations** → **Connect Discord**\n"
+            "   (Do **not** use “Sign in with Discord” until Discord is linked.)\n"
             "3. Retry `/imagine`"
         )
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
 from maya_contracts import (
@@ -27,6 +27,7 @@ from maya_db import (
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from maya_gateway.auth.deps import get_operator_id
 from maya_gateway.services.discover_query import parse_discover_query
 from maya_gateway.services.discover_rank import (
     get_collection_summary,
@@ -38,18 +39,16 @@ from maya_gateway.services.discover_rank import (
 
 router = APIRouter(prefix="/api/discover", tags=["discover"])
 
-DEFAULT_OPERATOR_ID = "local"
-
 
 @router.get("/feed", response_model=FeedResponse)
 async def get_feed(
+    operator_id: Annotated[str, Depends(get_operator_id)],
+    session: AsyncSession = Depends(get_async_session),
     cursor: Optional[str] = None,
     limit: int = 20,
     window: str = "7d",
     lane: Optional[str] = None,
     refresh: bool = False,  # noqa: ARG001 — client hint; ranker is stateless
-    operator_id: str = DEFAULT_OPERATOR_ID,
-    session: AsyncSession = Depends(get_async_session),
 ):
     prefs = await get_or_create_preferences(session, operator_id)
     effective_window = window or prefs.window_default
@@ -66,10 +65,10 @@ async def get_feed(
 @router.get("/feed/ask", response_model=FeedResponse)
 async def ask_feed(
     q: str,
+    operator_id: Annotated[str, Depends(get_operator_id)],
+    session: AsyncSession = Depends(get_async_session),
     cursor: Optional[str] = None,
     limit: int = 20,
-    operator_id: str = DEFAULT_OPERATOR_ID,
-    session: AsyncSession = Depends(get_async_session),
 ):
     prefs = await get_or_create_preferences(session, operator_id)
     parsed = parse_discover_query(q, default_window=prefs.window_default)
@@ -85,7 +84,7 @@ async def ask_feed(
 
 @router.get("/preferences", response_model=OperatorPreferences)
 async def get_preferences(
-    operator_id: str = DEFAULT_OPERATOR_ID,
+    operator_id: Annotated[str, Depends(get_operator_id)],
     session: AsyncSession = Depends(get_async_session),
 ):
     return await get_or_create_preferences(session, operator_id)
@@ -94,7 +93,7 @@ async def get_preferences(
 @router.patch("/preferences", response_model=OperatorPreferences)
 async def update_preferences(
     patch: OperatorPreferencesPatch,
-    operator_id: str = DEFAULT_OPERATOR_ID,
+    operator_id: Annotated[str, Depends(get_operator_id)],
     session: AsyncSession = Depends(get_async_session),
 ):
     return await patch_preferences(
@@ -110,7 +109,7 @@ async def update_preferences(
 
 @router.get("/collection/summary", response_model=CollectionSummary)
 async def collection_summary(
-    operator_id: str = DEFAULT_OPERATOR_ID,
+    operator_id: Annotated[str, Depends(get_operator_id)],
     session: AsyncSession = Depends(get_async_session),
 ):
     row = await get_collection_summary(session, operator_id)
@@ -136,18 +135,18 @@ async def collection_summary(
 
 @router.get("/inbox/summary", response_model=InboxSummaryResponse)
 async def inbox_summary(
-    window: str = "7d",
-    operator_id: str = DEFAULT_OPERATOR_ID,
+    operator_id: Annotated[str, Depends(get_operator_id)],
     session: AsyncSession = Depends(get_async_session),
+    window: str = "7d",
 ):
     return await get_inbox_summary(session, operator_id, window=window)
 
 
 @router.get("/events", response_model=DiscoverEventsResponse)
 async def list_events(
+    operator_id: Annotated[str, Depends(get_operator_id)],  # noqa: ARG001
     metro: str = "minneapolis",
     days: int = 30,
-    operator_id: str = DEFAULT_OPERATOR_ID,  # noqa: ARG001
 ):
     # RA connector stub — returns empty until lib/sources RA adapter lands.
     return DiscoverEventsResponse(items=[], metro=metro)
@@ -155,7 +154,7 @@ async def list_events(
 
 @router.get("/artists/tracker", response_model=ArtistTrackerResponse)
 async def artist_tracker(
-    operator_id: str = DEFAULT_OPERATOR_ID,
+    operator_id: Annotated[str, Depends(get_operator_id)],
     session: AsyncSession = Depends(get_async_session),
 ):
     follows = (

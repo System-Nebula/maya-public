@@ -17,6 +17,7 @@ from maya_db import (
     get_async_session,
 )
 from maya_feeds import get_adapter
+from maya_feeds.protocol import ChannelMetadata
 from prefect import flow, get_run_logger, task
 from sqlalchemy import or_, select
 from sqlalchemy.exc import ProgrammingError
@@ -80,8 +81,13 @@ async def _poll_one(
     seed_run = channel.last_fetched_at is None
 
     adapter = get_adapter(Platform(channel.platform))
-    metadata = await adapter.resolve_channel(channel.handle)
-    entries = await adapter.list_recent_videos(metadata, limit=20)
+    metadata = await _channel_metadata(adapter, channel)
+    try:
+        entries = await adapter.list_recent_videos(metadata, limit=20)
+    except Exception:
+        metadata = await adapter.resolve_channel(channel.handle)
+        _apply_metadata(channel, metadata)
+        entries = await adapter.list_recent_videos(metadata, limit=20)
     existing_ids = set(
         (
             await session.execute(
@@ -126,6 +132,7 @@ async def _poll_one(
         if not notify_operators:
             continue
         for operator_id in notify_operators:
+            link = _notification_link(channel.platform, entry.video_id, video.id)
             session.add(
                 NotificationDB(
                     kind=NotificationKind.NEW_VIDEO.value,
@@ -134,7 +141,7 @@ async def _poll_one(
                     video_id=video.id,
                     title=entry.title,
                     body=channel.display_name,
-                    link=f"/feeds/videos/{video.id}",
+                    link=link,
                     read=False,
                 )
             )
@@ -142,6 +149,38 @@ async def _poll_one(
 
     if new_video_ids:
         await _fan_out_analysis(channel.platform, new_video_ids)
+
+
+async def _channel_metadata(adapter, channel: ChannelDB) -> ChannelMetadata:
+    if (
+        channel.feed_url
+        and channel.platform_id
+        and not channel.platform_id.startswith("@")
+    ):
+        return ChannelMetadata(
+            platform=Platform(channel.platform),
+            platform_id=channel.platform_id,
+            handle=channel.handle,
+            display_name=channel.display_name,
+            feed_url=channel.feed_url,
+        )
+    metadata = await adapter.resolve_channel(channel.handle)
+    _apply_metadata(channel, metadata)
+    return metadata
+
+
+def _apply_metadata(channel: ChannelDB, metadata: ChannelMetadata) -> None:
+    if metadata.feed_url and metadata.platform_id:
+        channel.platform_id = metadata.platform_id
+        channel.feed_url = metadata.feed_url
+        if metadata.display_name:
+            channel.display_name = metadata.display_name
+
+
+def _notification_link(platform: str, yt_video_id: str, internal_video_id) -> str:
+    if platform == Platform.YOUTUBE.value:
+        return f"https://www.youtube.com/watch?v={yt_video_id}"
+    return f"/feeds/videos/{internal_video_id}"
 
 
 @task

@@ -10,8 +10,10 @@ dependencies = [
     "asyncpg>=0.29",
     "jinja2>=3.1",
     "itsdangerous>=2.2",
+    "argon2-cffi>=23.1",
     "maya-contracts",
     "arena-core",
+    "maya-audio",
     "maya-db",
     "maya-image",
     "maya-feeds",
@@ -20,11 +22,13 @@ dependencies = [
     "obs-client",
     "slskd-api",
     "python-multipart>=0.0.32",
+    "email-validator>=2.0",
 ]
 
 [tool.uv.sources]
 maya-contracts = { workspace = true }
 arena-core = { workspace = true }
+maya-audio = { workspace = true }
 maya-db = { workspace = true }
 maya-image = { workspace = true }
 maya-feeds = { workspace = true }

@@ -30,10 +30,22 @@ cp .env.example .env
 uv run maya-bot
 ```
 
-In Discord (after inviting the bot with `applications.commands` scope):
+### Inviting the bot
+
+From the [Developer Portal](https://discord.com/developers/applications) → your app →
+**OAuth2 → URL Generator**:
+
+- Scopes: **`bot`** and **`applications.commands`** (both required — `bot` alone lets it join
+  the server and voice channels, `applications.commands` registers the slash commands).
+- Bot permissions: `View Channels`, `Send Messages`, `Read Message History`, `Connect`,
+  `Speak`, `Use Voice Activity`.
+
+Visit the generated URL, pick your server, authorize. Then in Discord:
 
 ```
 /imagine prompt:"a cat astronaut" mode:Arena
+/play despacito          # joins your current voice channel and starts streaming
+@Maya hello               # tag the bot in a text channel for a quick chat reply
 ```
 
 Vote with the A / B / Tie buttons. Ratings update via ELO in `arena_candidates`.
