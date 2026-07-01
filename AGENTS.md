@@ -25,11 +25,9 @@ FastAPI **`maya-gateway`**. `uv` is installed at `~/.local/bin` and is on the lo
 
 - Commands are documented in the `Makefile` (`gateway-test`, `research-test`,
   etc.). There is no separate lint step configured in CI for the Python side.
-- Gateway suite: `make gateway-test` or
-  `uv run --project apps/maya-gateway --with pytest pytest apps/maya-gateway/tests/`
-  — most pass without Postgres. `test_discover_inbox_webhook` needs a migrated DB.
+- Gateway suite: `make gateway-test` (needs migrated Postgres for inbox webhook).
 - Image tests: `uv run --project packages/maya-image --with pytest pytest packages/maya-image/tests/`
-- CI: `.github/workflows/test.yml` runs gateway, maya-image, and maya-research on push/PR.
+- CI: `.github/workflows/test.yml` — Postgres 16 + pgvector, migrations, full pytest matrix.
 - `uv run --project packages/maya-research --with pytest --with pytest-asyncio pytest packages/maya-research/tests/` → all pass.
 
 ### Postgres (optional, for data-backed flows)
@@ -41,19 +39,16 @@ FastAPI **`maya-gateway`**. `uv` is installed at `~/.local/bin` and is on the lo
 - The pgvector extension **is required** by several Alembic migrations
   (`CREATE EXTENSION vector`).
 
-### Resolved on `fix/main-dev-blockers` (pending merge to main)
+### Resolved in this branch
 
-- **Arena migration FK types** — `arena_battles.candidate_*_id` and `winner_id` are
-  now `UUID`, matching `arena_candidates.id`.
-- **Ideogram4 graph tests** — `create_ideogram4_graph()` resolves the workflow
-  from repo-root `infra/comfyui/workflows/ideogram4/` with an inline fallback when
-  the Comfy export is not checked in.
+- **Arena migration + ORM FK types** — UUID columns throughout; `uuid-ossp` enabled in init migration.
+- **Ideogram4 graph tests** — repo-root workflow path with inline fallback.
+- **Arena unit tests** — `conftest.py` skips on-disk Comfy weight checks.
+- **CI** — Postgres + pgvector service, migrations, gateway/image/research/contracts tests.
 
-### Remaining known issues
+### Remaining notes
 
-- **Some maya-image arena tests** reference `maya_image.db` modules that are not
-  in the public tree; `test_comfy_bind.test_inject_prompt_and_dimensions` expects
-  z-image node IDs from the JSON template, not the programmatic graph.
+- Arena integration tests without local Postgres retry slowly (~3 min); CI stays fast with the service container.
 
 ### Other services (not exercised here)
 
