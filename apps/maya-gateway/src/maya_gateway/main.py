@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from obs_client import configure_logging
 
-from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, health, intel, music, music_query, notifications, registry, research
+from maya_gateway.routes import arena, discover, discover_inbox, feeds, follow, guide, health, intel, music, music_query, notifications, registry, research
 
 log = logging.getLogger("maya-gateway")
 
@@ -68,6 +68,7 @@ app.include_router(notifications.router)
 app.include_router(discover.router)
 app.include_router(discover_inbox.router)
 app.include_router(research.router)
+app.include_router(guide.router)
 
 # Imagine /gateway/imagine — canonical backend from ~/Workspace
 _include_workspace_imagine()
