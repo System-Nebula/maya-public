@@ -73,7 +73,7 @@ def _battle_view(battle, *, blind: bool = True) -> dict[str, Any]:
         state = "failed"
 
     ctx: dict[str, Any] = {
-        "battle_id": battle.id,
+        "battle_id": str(battle.id),
         "prompt": battle.prompt,
         "state": state,
         "image_a": image_a,
@@ -149,7 +149,7 @@ async def imagine_page(request: Request) -> HTMLResponse:
         request,
         "imagine/imagine_alpine.html",
         {
-            "bootstrap_json": json.dumps(bootstrap),
+            "bootstrap_json": json.dumps(bootstrap, default=str),
             "default_workflow_id": default_workflow_id,
         },
     )
@@ -161,7 +161,7 @@ async def imagine_leaderboard(request: Request):
     rows = await asyncio.to_thread(svc.get_leaderboard, 20, "image")
     candidates = [
         {
-            "id": c.id,
+            "id": str(c.id),
             "name": c.name,
             "provider": c.provider,
             "model_key": c.model_key,
