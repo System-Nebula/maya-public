@@ -297,9 +297,9 @@ def create_ideogram4_graph(
 ) -> dict[str, Any]:
     """Ideogram 4 local t2i graph (API format).
 
-    Uses the committed workflow template when present; otherwise a minimal inline graph.
+    Uses the committed workflow template when present; otherwise a minimal inline graph
+    so unit tests and arena binding work without the full Comfy export checked in.
     """
-    import copy
     import json
 
     from maya_image.comfy_bind import build_ideogram_caption
@@ -315,7 +315,7 @@ def create_ideogram4_graph(
             "5": {"class_type": "CLIPTextEncode", "inputs": {"text": prompt, "clip": ["1", 0]}},
             "8": {
                 "class_type": "EmptyLatentImage",
-                "inputs": {"width": width, "height": height, "batch_size": 1},
+                "inputs": {"width": width, "height": height, "batch_size": 1, "steps": steps},
             },
             "10": {"class_type": "RandomNoise", "inputs": {"noise_seed": 0}},
             "11": {
