@@ -1,0 +1,36 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install workspace
+        run: uv sync --all-packages
+
+      - name: Gateway tests
+        run: uv run --project apps/maya-gateway --with pytest pytest apps/maya-gateway/tests/ -v --ignore=apps/maya-gateway/tests/test_discover_inbox_webhook.py
+
+      - name: maya-image tests
+        run: uv run --project packages/maya-image --with pytest pytest packages/maya-image/tests/ -v
+
+      - name: maya-research tests
+        run: uv run --project packages/maya-research --with pytest --with pytest-asyncio pytest packages/maya-research/tests/ -v
