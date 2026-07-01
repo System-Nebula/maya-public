@@ -3,7 +3,7 @@
 # Most paths assume you're running from the repo root.
 # JS/TS toolchain: bun (use `nix-shell -p bun` if bun isn't on PATH).
 
-HOMEPAGE_DIR := apps/homepage
+HOMEPAGE_DIR := $(WORKSPACE_ROOT)/start-page
 GATEWAY_STATIC := apps/maya-gateway/src/maya_gateway/static
 E2E_DIR := tests/e2e
 
@@ -35,7 +35,7 @@ NUMPY_NIX_LIBS ?= $(shell nix-shell -p stdenv.cc.cc.lib zlib.out --run 'for p in
 .PHONY: help homepage-deps homepage-dev homepage-build homepage-deploy \
         gateway-dev gateway-test test typecheck voice-eval voice-asr-arena voice-stack-test voice-e2e-gpu voice-benchmark voice-e2e \
         e2e-deps e2e-install e2e-test docker-build clean-homepage \
-        feeds-migrate ingest-dev ingest-poll ingest-embed ingest-backfill ingest-analyze ingest-parse-intel \
+        feeds-migrate auth-seed ingest-dev ingest-poll ingest-embed ingest-backfill ingest-analyze ingest-parse-intel \
         seed-profiles repair-youtube-channels check-upload-alerts \
         research-test research-flow \
         db-create db-shell slskd-ingest-fixtures slskd-worker slskd-status slskd-probe \
@@ -150,6 +150,11 @@ clean-homepage: ## Remove the built SPA from the gateway static dir
 
 feeds-migrate: ## Run Alembic migrations for the maya-db package
 	cd packages/maya-db && DATABASE_URL=$(DATABASE_URL) uv run alembic -c alembic.ini upgrade head
+
+auth-seed: feeds-migrate ## Migrate DB and seed dev invite + warby + admin users
+	MAYA_SEED_WARBY_PASSWORD=$(or $(MAYA_SEED_WARBY_PASSWORD),$(MAYA_SEED_DEV_PASSWORD)) \
+	MAYA_SEED_ADMIN_PASSWORD=$(or $(MAYA_SEED_ADMIN_PASSWORD),$(MAYA_SEED_DEV_PASSWORD)) \
+	DATABASE_URL=$(DATABASE_URL) uv run python scripts/seed_auth_users.py
 
 ingest-dev: ## Start a Prefect worker that runs the ingest flows
 	DATABASE_URL=$(DATABASE_URL) uv run --project apps/maya-ingest prefect worker start -p default

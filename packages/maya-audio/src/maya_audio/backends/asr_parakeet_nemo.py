@@ -18,6 +18,7 @@ log = logging.getLogger("maya-audio.asr.parakeet")
 
 DEFAULT_MODEL = "nvidia/parakeet-ctc-0.6b"
 WINDOW_SECONDS = 30.0
+SPEECH_RMS_THRESHOLD = 250.0
 
 
 class ParakeetNemoBackend(AsrBackend):
@@ -29,6 +30,7 @@ class ParakeetNemoBackend(AsrBackend):
         *,
         device: str | None = None,
         window_seconds: float = WINDOW_SECONDS,
+        speech_rms_threshold: float = SPEECH_RMS_THRESHOLD,
         warmup: bool = False,
     ) -> None:
         import torch
@@ -36,6 +38,7 @@ class ParakeetNemoBackend(AsrBackend):
         self.model_id = "parakeet-ctc-0.6b"
         self.model_name = model_name
         self.window_seconds = window_seconds
+        self.speech_rms_threshold = speech_rms_threshold
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
         load_started = time.perf_counter()
@@ -45,6 +48,8 @@ class ParakeetNemoBackend(AsrBackend):
             raise ImportError(
                 "Install GPU extras: uv sync --project packages/maya-audio --extra gpu"
             ) from exc
+
+        logging.getLogger("nemo_logger").setLevel(logging.ERROR)
 
         log.info("loading parakeet model=%s device=%s", model_name, self.device)
         self._model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained(model_name=model_name)
@@ -74,30 +79,46 @@ class ParakeetNemoBackend(AsrBackend):
         )
 
     def _transcribe_windowed(self, path: str, total_duration: float) -> list[TranscriptSegment]:
-        segments: list[TranscriptSegment] = []
+        windows: list[tuple[float, float, str]] = []
         offset = 0.0
         while offset < total_duration:
             window = min(self.window_seconds, total_duration - offset)
             if window <= 0:
                 break
             clip = _extract_clip(path, offset, window)
-            try:
-                text = self._transcribe_clip(clip)
-            finally:
+            if _clip_has_speech(clip, self.speech_rms_threshold):
+                windows.append((offset, offset + window, clip))
+            else:
                 Path(clip).unlink(missing_ok=True)
-            if text:
-                segments.append(
-                    TranscriptSegment(start=offset, end=offset + window, text=text)
-                )
             offset += self.window_seconds
+
+        if not windows:
+            return []
+
+        try:
+            texts = self._transcribe_clips_batch([clip for _, _, clip in windows])
+        finally:
+            for _, _, clip in windows:
+                Path(clip).unlink(missing_ok=True)
+
+        segments: list[TranscriptSegment] = []
+        for (start, end, _), text in zip(windows, texts, strict=True):
+            if text:
+                segments.append(TranscriptSegment(start=start, end=end, text=text))
         return segments
 
+    def _transcribe_clips_batch(self, wav_paths: list[str]) -> list[str]:
+        if not wav_paths:
+            return []
+        hyps = self._model.transcribe(wav_paths, batch_size=min(8, len(wav_paths)))
+        out: list[str] = []
+        for hyp in hyps:
+            text = getattr(hyp, "text", None)
+            out.append(str(text).strip() if text is not None else str(hyp).strip())
+        return out
+
     def _transcribe_clip(self, wav_path: str) -> str:
-        hyps = self._model.transcribe([wav_path])
-        if not hyps:
-            return ""
-        first = hyps[0]
-        return str(first).strip()
+        return self._transcribe_clips_batch([wav_path])[0]
 
     def _infer(self, audio16: np.ndarray) -> str:
         if audio16.size == 0:
@@ -109,6 +130,15 @@ class ParakeetNemoBackend(AsrBackend):
             return self._transcribe_clip(clip)
         finally:
             Path(clip).unlink(missing_ok=True)
+
+
+def _clip_has_speech(wav_path: str, threshold: float) -> bool:
+    with wave.open(wav_path, "rb") as w:
+        frames = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16)
+    if frames.size == 0:
+        return False
+    rms = float(np.sqrt(np.mean(frames.astype(np.float32) ** 2)))
+    return rms >= threshold
 
 
 def _extract_clip(source: str, start_s: float, duration_s: float) -> str:

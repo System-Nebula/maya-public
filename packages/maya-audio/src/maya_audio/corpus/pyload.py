@@ -26,7 +26,7 @@ class MappedVideo:
 
 def slugify(name: str) -> str:
     base = Path(name).stem
-    slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", base).strip("-").lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", base.lower()).strip("-")
     return slug[:96] or "video"
 
 

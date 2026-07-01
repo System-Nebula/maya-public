@@ -2,7 +2,7 @@
 # otherwise `source .envrc` before running gateway/ingest commands.
 
 # Gateway / ingest both read DATABASE_URL via maya_db.connection.get_engine.
-export DATABASE_URL="postgresql+asyncpg://postgres:postgres@localhost:5433/maya_public"
+export DATABASE_URL="postgresql+asyncpg://maya:maya@localhost:5433/maya_public"
 
 # Gateway port — defaults to 8090 because :8080 is commonly taken (AdGuard).
 export PORT="8090"
