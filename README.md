@@ -41,6 +41,21 @@ Postgres; set `DATABASE_URL` in `.env` to point at one.
 
 `uv run maya-ingest` runs the feed/ingest worker (also reads `.env`).
 
+### Reproducible dev shell (Nix)
+
+`flake.nix` pins the full dev toolchain (Python 3.11, `uv`, PostgreSQL 16 +
+pgvector, `bun`, Node, and the Playwright browsers) so dev builds reproduce
+exactly across machines:
+
+```bash
+nix develop            # enters the pinned shell (or `direnv allow` with .envrc → `use flake`)
+uv sync --all-packages
+ENV=development PORT=8090 uv run maya-gateway
+```
+
+Inside the shell, `PLAYWRIGHT_BROWSERS_PATH` is pre-set, so `make e2e-test`
+(and `bun x playwright test`) run without the ad-hoc `nix-shell -p` calls.
+
 ### Discord bot + image arena
 
 See [`apps/maya-bot/README.md`](apps/maya-bot/README.md) for clone-and-run setup:
